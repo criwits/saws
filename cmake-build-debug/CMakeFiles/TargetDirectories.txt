@@ -1,3 +1,0 @@
-/home/hans/Coding/C/saws/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/hans/Coding/C/saws/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/hans/Coding/C/saws/cmake-build-debug/CMakeFiles/saws.dir

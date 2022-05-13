@@ -9,5 +9,8 @@ file(GLOB_RECURSE SOURCE_FILES
 set(HEADER_DIRECTORIES
         "${PROJECT_SOURCE_DIR}/include"
         "${PROJECT_SOURCE_DIR}/include/common")
+
 include_directories(${HEADER_DIRECTORIES})
 add_executable(saws ${SOURCE_FILES})
+
+target_link_libraries(saws websockets)

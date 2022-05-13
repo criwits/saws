@@ -1,0 +1,11 @@
+{
+  "identifier": "SAWS",
+  "server": {
+    "version": 1,
+    "ws_port": 3781,
+    "max_pair_cnt": 4
+  },
+  "game": {
+
+  }
+}

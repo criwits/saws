@@ -17,5 +17,6 @@
 
 // 项目头文件
 #include <logger.h>
+#include <macro.h>
 
 #endif //SAWS_COMMON_H

@@ -5,6 +5,16 @@
  * @version 0.1.0
  */
 #include <common.h>
+#include <signal.h>
+#include <engine/server.h>
+
+
+#include <database/user.h>
+
+void sig_handler(int sig) {
+  saws_log("Received signal %d: %s", sig, strsignal(sig));
+  stop_server();
+}
 
 /**
  * 主函数
@@ -15,8 +25,17 @@
  * @return
  */
 int main(int argc, const char *argv[]) {
-  saws_log("Starting SAWS...");
-  saws_err("An error occurred!");
-  saws_warn("It's just a warning.");
+  printf("SAWS - Simple Aircraft War Server (ver. 0.1)\n");
+  printf("(C) Hans WAN. Licensed under MIT license.\n");
+
+  signal(SIGTERM, sig_handler);
+  signal(SIGINT, sig_handler);
+
+  init_server(argc, argv);
+
+
+  while (true) {}
   return 0;
 }
+
+

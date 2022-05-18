@@ -1,11 +1,39 @@
 {
-  "identifier": "SAWS",
-  "server": {
-    "version": 1,
-    "ws_port": 3781,
-    "max_pair_cnt": 4
-  },
-  "game": {
-
-  }
+  "time_interval": 17,
+  "cycle_duration": 480,
+  "difficulty": [
+    {
+      "name": "Easy",
+      "has_boss": false,
+      "boss_hp_increase": 0,
+      "enemy_max_number": 5,
+      "enemy_bullet_power": 20,
+      "boss_bullet_power": 40,
+      "enemy_speed_y_increase": 0,
+      "enemy_speed_y": 5,
+      "enemy_speed_y_max": 5
+    },
+    {
+      "name": "Moderate",
+      "has_boss": true,
+      "boss_hp_increase": 0,
+      "enemy_max_number": 8,
+      "enemy_bullet_power": 30,
+      "boss_bullet_power": 45,
+      "enemy_speed_y_increase": 0,
+      "enemy_speed_y": 6,
+      "enemy_speed_y_max": 6
+    },
+    {
+      "name": "Hard",
+      "has_boss": true,
+      "boss_hp_increase": 20,
+      "enemy_max_number": 10,
+      "enemy_bullet_power": 35,
+      "boss_bullet_power": 50,
+      "enemy_speed_y_increase": 1,
+      "enemy_speed_y": 6,
+      "enemy_speed_y_max": 10
+    }
+  ]
 }

@@ -45,7 +45,7 @@ void lws_init(int port) {
 }
 
 void lws_stop() {
-  saws_log("Stopped WebSocket server");
   interrupted = true;
   lws_context_destroy(context);
+  saws_log("Stopped WebSocket server");
 }

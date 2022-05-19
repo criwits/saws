@@ -9,6 +9,8 @@
 
 #include <stdio.h>
 
+#define SAWS_DEBUG_ENABLED
+
 /*** ANSI 颜色代码 ***/
 
 #define ANSI_FG_BLACK   "\33[1;30m"
@@ -50,5 +52,12 @@
 
 #define saws_err(format, ...) \
   saws_formatted_log(ANSI_FG_RED, format, ## __VA_ARGS__)
+
+#ifdef SAWS_DEBUG_ENABLED
+#define saws_debug(format, ...) \
+  saws_formatted_log(ANSI_FG_CYAN, format, ## __VA_ARGS__)
+#else
+#define saws_debug(format, ...)
+#endif
 
 #endif //SAWS_LOGGER_H

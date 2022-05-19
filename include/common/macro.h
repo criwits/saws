@@ -12,4 +12,6 @@
 #define concat3(a, b, c) concat(concat(a, b), c)
 #define str(a) # a
 
+#define arrlen(x) (sizeof(x) / sizeof(x[0]))
+
 #endif //SAWS_MACRO_H

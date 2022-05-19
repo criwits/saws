@@ -31,6 +31,7 @@ int query_user(const char *username, const char *password) {
     saws_warn("More than one user found with given user name and password");
     saws_warn("Please check database structure manually");
   }
+
   mysql_free_result(res);
   return atoi(mysql_fetch_row(res)[0]);
 }

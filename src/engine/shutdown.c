@@ -7,9 +7,12 @@
 
 #include <common.h>
 #include <database/mysql.h>
+#include <network/lws.h>
 
-void stop_server() {
+void stop_server(int status) {
   db_close();
+  lws_stop();
+
   saws_log("Bye");
-  exit(0);
+  exit(status);
 }

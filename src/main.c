@@ -6,14 +6,13 @@
  */
 #include <common.h>
 #include <signal.h>
+
 #include <engine/server.h>
-
-
-#include <database/user.h>
+#include <network/lws.h>
 
 void sig_handler(int sig) {
   saws_log("Received signal %d: %s", sig, strsignal(sig));
-  stop_server();
+  stop_server(0);
 }
 
 /**
@@ -33,8 +32,8 @@ int main(int argc, const char *argv[]) {
 
   init_server(argc, argv);
 
+  lws_loop();
 
-  while (true) {}
   return 0;
 }
 

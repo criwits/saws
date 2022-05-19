@@ -9,6 +9,7 @@
 #include <getopt.h>
 
 #include <database/mysql.h>
+#include <network/lws.h>
 
 static int websocket_port = 1376;
 static char *database_name = "saws_db";
@@ -16,7 +17,7 @@ static char *sql_username = "saws";
 static char *sql_password = "mayitbe";
 static char *config_filename = "config.json";
 
-static parse_args(int argc, const char *argv[]) {
+static int parse_args(int argc, const char *argv[]) {
   const struct option table[] = {
       {"port", required_argument, NULL, 'p'},
       {"database", required_argument, NULL, 'd'},
@@ -53,4 +54,5 @@ static parse_args(int argc, const char *argv[]) {
 void init_server(int argc, const char *argv[]) {
   parse_args(argc, argv);
   db_init(database_name, sql_username, sql_password);
+  lws_init(websocket_port);
 }

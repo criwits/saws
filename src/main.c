@@ -10,9 +10,27 @@
 #include <engine/server.h>
 #include <network/lws.h>
 
-void sig_handler(int sig) {
+#include <timer/timer.h>
+#include <unistd.h>
+
+static void sig_handler(int sig) {
   saws_log("Received signal %d: %s", sig, strsignal(sig));
   stop_server(0);
+}
+
+static void welcome() {
+  printf("SAWS - Simple Aircraft War Server (ver. 0.1)\n");
+  printf("(C) Hans WAN. Licensed under MIT license.\n");
+  printf("A part of coursework of OOP lecture, HIT Shenzhen.\n");
+}
+
+void print(int session_id, int cnt) {
+  saws_log("%d, %d", session_id, cnt);
+}
+
+static void bind_signal() {
+  signal(SIGTERM, sig_handler);
+  signal(SIGINT, sig_handler);
 }
 
 /**
@@ -24,17 +42,10 @@ void sig_handler(int sig) {
  * @return
  */
 int main(int argc, const char *argv[]) {
-  printf("SAWS - Simple Aircraft War Server (ver. 0.1)\n");
-  printf("(C) Hans WAN. Licensed under MIT license.\n");
-
-  signal(SIGTERM, sig_handler);
-  signal(SIGINT, sig_handler);
-
+  welcome();
+  bind_signal();
   init_server(argc, argv);
-
   lws_loop();
-
   return 0;
 }
-
 

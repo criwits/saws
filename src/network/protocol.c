@@ -91,6 +91,7 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
     case LWS_CALLBACK_CLOSED:
       // 连接已断开
       // 删除当前客户端
+      saws_log("A client lost its connection");
       lws_ll_fwd_remove(struct per_session_data_saws, pss_list,
                       pss, vhd->pss_list);
       break;

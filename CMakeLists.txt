@@ -13,4 +13,4 @@ set(HEADER_DIRECTORIES
 include_directories(${HEADER_DIRECTORIES})
 add_executable(saws ${SOURCE_FILES})
 
-target_link_libraries(saws websockets mariadb)
+target_link_libraries(saws websockets mariadb pthread)

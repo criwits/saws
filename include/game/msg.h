@@ -22,6 +22,9 @@ struct user_query_s {
   char password[MAX_PASSWORD_LENGTH];
 };
 
+struct create_room_s {
+  int difficulty;
+};
 
 
 #endif //SAWS_MSG_H

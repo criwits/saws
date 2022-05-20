@@ -4,6 +4,8 @@
 #include <common.h>
 #include <libwebsockets.h>
 
+#include <game/room.h>
+
 /**
  * 消息结构体
  */
@@ -20,8 +22,8 @@ struct per_session_data_saws {
   struct per_session_data_saws *pss_list;    // 下一个客户端
   struct lws *wsi;                           // 与这个客户端相关的连接的句柄
   int client_id;                             // 客户端编号
-  int room_id;                               // 与这个客户端绑定的房间号
   int uid;
+  room_t *room;
 };
 
 /**

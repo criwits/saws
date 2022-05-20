@@ -8,7 +8,7 @@ typedef void (*timer_callback_func_t)(int session_id, int ms_cnt);
 
 typedef struct timer_session_s {
   // struct timer_session_s *next;
-  int session_id;
+  int timer_id;
   pthread_t timer_thread;
   int callback_ms;
   timer_callback_func_t callback_func;

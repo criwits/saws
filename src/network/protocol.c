@@ -11,10 +11,10 @@
 #include <database/user.h>
 
 #include <network/protocol.h>
+#include <game/room.h>
 
 static int client = 0;
 static int room_id = 0;
-
 
 /**
  * 释放消息
@@ -67,7 +67,6 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
       lws_ll_fwd_insert(pss, pss_list, vhd->pss_list);
       pss->wsi = wsi;
       pss->client_id = client++;
-      pss->room_id = -1;
       pss->uid = -1;
       break;
     }
@@ -106,11 +105,27 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
           int uid = query_user(msg_struct->username, msg_struct->password);
           if (uid == -1) {
             saws_debug("Invalid username or password");
-            // TODO
+            // TODO: Invalid user
           } else {
             saws_debug("Successfully logged in with UID: %d", uid);
-            // TODO
+            // 将用户和连接绑定
+            pss->uid = uid;
           }
+
+          break;
+        }
+
+        case ROOM_INFO: {
+          break;
+        }
+
+        case CREATE_ROOM: {
+          struct create_room_s *msg_struct = (struct create_room_s *)msg_struct_raw;
+          saws_debug("Client %d trying to create a room with difficulty level %d", pss->client_id, msg_struct->difficulty);
+          // 开房
+          int curr_room_id = room_id++;
+          // 将房间与客户端绑定
+          pss->room = add_room(curr_room_id, pss, NULL, vhd);
 
           break;
         }

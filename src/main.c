@@ -35,8 +35,6 @@ static void bind_signal() {
 
 /**
  * 主函数
- * 传参只为配置文件，即：
- *   saws -c config.json
  * @param argc 参数个数
  * @param argv 参数列表
  * @return

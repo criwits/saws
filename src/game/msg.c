@@ -32,9 +32,19 @@ def_msg_handler(user_query) {
   strcpy(s->password, json_node(password)->valuestring);
 }
 
+def_msg_handler(room_info) {
+  // 空的
+}
+
+def_msg_handler(create_room) {
+  *msg_struct = malloc(sizeof(struct create_room_s));
+  struct create_room_s *s = (struct create_room_s *)(*msg_struct);
+  json_parse_node(root, difficulty)
+  s->difficulty = json_node(difficulty)->valueint;
+}
 
 msg_handler_t msg_handler[] = {
-    user_query, NULL
+    user_query, room_info, create_room, NULL
 };
 
 int decode_msg(const char *msg, void **msg_struct) {

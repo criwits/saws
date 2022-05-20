@@ -23,7 +23,8 @@ struct per_session_data_saws {
   struct lws *wsi;                           // 与这个客户端相关的连接的句柄
   int client_id;                             // 客户端编号
   int uid;
-  room_t *room;
+  // 好像因为头文件互相包含了，不能用 room_t
+  struct room_s *room;
 };
 
 /**
@@ -35,7 +36,6 @@ struct per_vhost_data_saws {
   const struct lws_protocols *protocol;      // 服务器协议
 
   struct per_session_data_saws *pss_list;    // 客户端链表
-
   struct msg amsg;                           // 接收到的消息，缓存大小为一条数据
 };
 

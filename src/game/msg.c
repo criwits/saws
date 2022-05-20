@@ -43,13 +43,34 @@ def_msg_handler(create_room) {
   s->difficulty = json_node(difficulty)->valueint;
 }
 
+def_msg_handler(join_room) {
+  *msg_struct = malloc(sizeof(struct join_room_s));
+  struct join_room_s *s = (struct join_room_s *)(*msg_struct);
+  json_parse_node(root, room_id)
+  s->room_id = json_node(room_id)->valueint;
+}
+
+def_msg_handler(resolution) {
+  *msg_struct = malloc(sizeof(struct resolution_s));
+  struct resolution_s *s = (struct resolution_s *)(*msg_struct);
+  json_parse_node(root, width)
+  json_parse_node(root, height)
+  s->width = json_node(width)->valueint;
+  s->height = json_node(height)->valueint;
+}
+
 msg_handler_t msg_handler[] = {
-    user_query, room_info, create_room, NULL
+    user_query, room_info, create_room, join_room,
+    resolution,
+    NULL
 };
 
 int decode_msg(const char *msg, void **msg_struct) {
   cJSON *json_node(root) = cJSON_Parse(msg);
   json_parse_node(root, type)
+  if (json_node(type) == NULL) {
+    return RECV_MSG_CNT;
+  }
   int type = 0;
   for (int i = 0; i < RECV_MSG_CNT; i++) {
     if (0 == strcmp(json_node(type)->valuestring, msg_type[i])) {

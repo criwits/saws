@@ -112,6 +112,7 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
             pss->uid = uid;
           }
 
+          free(msg_struct);
           break;
         }
 
@@ -126,7 +127,56 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
           int curr_room_id = room_id++;
           // 将房间与客户端绑定
           pss->room = add_room(curr_room_id, pss, NULL, vhd);
+          pss->room->host_uid = pss->uid;
 
+          free(msg_struct);
+          break;
+        }
+
+        case JOIN_ROOM: {
+          struct join_room_s *msg_struct = (struct join_room_s *)msg_struct_raw;
+          saws_debug("Client %d trying to join room id %d", pss->client_id, msg_struct->room_id);
+          room_t *room = get_room_by_id(msg_struct->room_id);
+          if (room == NULL) {
+            saws_debug("Invalid room id %d", msg_struct->room_id);
+            // TODO: Invalid room_id
+          } else {
+            if (room->guest != NULL) {
+              // TODO: Unavailable room
+              saws_debug("Room %d is unavailable", msg_struct->room_id);
+            } else {
+              // 可以加入房间
+              saws_debug("Client %d successfully joined room %d", pss->client_id, room->room_id);
+              room->guest = pss;
+              room->guest_uid = pss->uid;
+              pss->room = room;
+              // TODO: send back
+            }
+          }
+
+          free(msg_struct);
+          break;
+        }
+
+        case RESOLUTION: {
+          struct resolution_s *msg_struct = (struct resolution_s *)msg_struct_raw;
+          saws_debug("Client %d reported its screen resolution %d x %d", pss->client_id, msg_struct->width, msg_struct->height);
+          // TODO: check if client has entered a room
+          if (pss->uid == pss->room->host_uid) {
+            // 房主
+            pss->room->host_width = msg_struct->width;
+            pss->room->host_height = msg_struct->height;
+          } else {
+            // 房客
+            pss->room->guest_width = msg_struct->width;
+            pss->room->guest_height = msg_struct->height;
+          }
+          if (pss->room->host_width != -1 && pss->room->guest_width != -1) {
+            // 此时，双方都已经上报屏幕信息
+            // TODO: 下发缩放比例，开始游戏
+          }
+
+          free(msg_struct);
           break;
         }
 
@@ -167,10 +217,10 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
 }
 
 #define LWS_PLUGIN_PROTOCOL_SAWS \
-        { \
-                "saws", \
-                callback_saws, \
-                sizeof(struct per_session_data_saws), \
-                1024, \
-                0, NULL, 0 \
-        }
+  { \
+    "saws", \
+    callback_saws, \
+    sizeof(struct per_session_data_saws), \
+    1024, \
+    0, NULL, 0 \
+  }

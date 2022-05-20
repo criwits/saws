@@ -26,5 +26,13 @@ struct create_room_s {
   int difficulty;
 };
 
+struct join_room_s {
+  int room_id;
+};
+
+struct resolution_s {
+  int width;
+  int height;
+};
 
 #endif //SAWS_MSG_H

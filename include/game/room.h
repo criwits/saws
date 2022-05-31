@@ -23,6 +23,8 @@ typedef struct room_s {
   int guest_width;
   int guest_height;
 
+  int difficulty;
+
 } room_t;
 
 room_t *add_room(int room_id, struct per_session_data_saws *host, struct per_session_data_saws *guest,

@@ -30,23 +30,14 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
 }
 ```
 
-#### 成功
+#### 返回
+
+如果 uid 为 -1 表示失败。
 
 ```json
 {
   "type": "user_query_response",
-  "response": true,
-  "uid": 1
-}
-```
-
-#### 失败（用户名或密码错误）
-
-````json
-{
-  "type": "user_query_response",
-  "response": false,
-  "uid": 0
+  "uid": -1
 }
 ````
 
@@ -66,12 +57,10 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
   "rooms": [
     {
       "room_id": 1,
-      "host": "hans",
       "difficulty": 0
     },
     {
       "room_id": 3,
-      "host": "black",
       "difficulty": 2
     }
   ]
@@ -110,7 +99,7 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
 ```json
 {
   "type": "join_room_response",
-  "response": true
+  "success": true
 }
 ```
 
@@ -119,7 +108,7 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
 ```json
 {
   "type": "join_room_response",
-  "response": false
+  "success": false
 }
 ```
 
@@ -127,9 +116,7 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
 
 ```json
 {
-  "type": "room_ready",
-  "uid": 3,
-  "username": "hans"
+  "type": "room_ready"
 }
 ```
 
@@ -151,8 +138,7 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
 ```json
 {
   "type": "resolution_response",
-  "valid_height": 1800,
-  "scale": 1.12,
+  "ratio": 1.6,
   "enemy_bullet_power": 30,
   "boss_bullet_power": 45
 }
@@ -175,7 +161,7 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
 ```
 
 ### 上传移动信息
-
+（坐标是缩放前的）
 ```json
 {
   "type": "movement",
@@ -212,12 +198,20 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
 }
 ```
 
+### 上传受伤信息
+```json
+{
+  "type": "hurt",
+  "damage": 20
+}
+```
+
 ## 编译运行指南
 
 本项目使用 JetBrains CLion 开发。
 因此，如果使用 CLion 直接打开整个项目，那么应该不需要进行额外的配置。
 
-本项目使用了下面这些动态链接库：
+本项目使用了下面这些库：
 
 - libwebsockets
 

@@ -20,9 +20,12 @@ room_t *add_room(int room_id, struct per_session_data_saws *host, struct per_ses
   room = new_room;
 
   room->room_id = room_id;
+  room->vhost = vhost;
+
   room->host = host;
   room->guest = guest;
-  room->vhost = vhost;
+  room->host_uid = -1;
+  room->guest_uid = -1;
 
   room->host_height = -1;
   room->host_width = -1;

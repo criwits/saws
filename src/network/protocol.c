@@ -20,13 +20,33 @@ static int room_id = 0;
  * 释放消息
  * @param _msg
  */
-static void __saws_destroy_message(void *_msg) {
+static inline void destroy_message(void *_msg) {
   struct msg *msg = _msg;
 
   free(msg->payload);
   msg->payload = NULL;
   msg->len = 0;
 }
+
+#define __write_message(msg, msg_len) \
+  vhd->amsg.len = msg_len; \
+  vhd->amsg.payload = malloc(LWS_PRE + (msg_len)); \
+  if (!vhd->amsg.payload) { \
+    saws_warn("Out of memory when handling JSON: %s", msg); \
+    break; \
+  } \
+  memcpy((char *)vhd->amsg.payload + LWS_PRE, msg, msg_len);
+
+
+#define write_message(wsi, msg, type) \
+  if (vhd->amsg.payload) { \
+    destroy_message(&vhd->amsg); \
+  } \
+  char *msg_buf = encode_msg(msg, type); \
+  size_t msg_len = strlen(msg_buf); \
+  __write_message(msg_buf, msg_len) \
+  free(msg_buf); \
+  lws_callback_on_writable(wsi);
 
 /**
  * libwebsockets 回调函数
@@ -57,6 +77,7 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
       vhd->context = lws_get_context(wsi);
       vhd->protocol = lws_get_protocol(wsi);
       vhd->vhost = lws_get_vhost(wsi);
+      saws_log("Server initialised");
       break;
     }
 
@@ -81,10 +102,7 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
     }
 
     case LWS_CALLBACK_SERVER_WRITEABLE: {
-      // 在 lws_callback_on_writeable 时为此回调
-
-
-      /* notice we allowed for LWS_PRE in the payload already */
+      // 给客户端发送消息
       m = lws_write(wsi, ((unsigned char *) vhd->amsg.payload) +
                          LWS_PRE, vhd->amsg.len, LWS_WRITE_TEXT);
       if (m < (int) vhd->amsg.len) {
@@ -101,22 +119,27 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
       switch (msg_type) {
         case USER_QUERY: {
           struct user_query_s *msg_struct = (struct user_query_s *)msg_struct_raw;
-          saws_debug("User query for (%s, %s)", msg_struct->username, msg_struct->password);
+          saws_debug("User query for (%s, %c***)", msg_struct->username, *(msg_struct->password));
           int uid = query_user(msg_struct->username, msg_struct->password);
           if (uid == -1) {
             saws_debug("Invalid username or password");
-            // TODO: Invalid user
           } else {
             saws_debug("Successfully logged in with UID: %d", uid);
             // 将用户和连接绑定
             pss->uid = uid;
           }
+          // 返回登录状态
+          struct user_query_response_s msg = {
+              .uid = uid
+          };
+          write_message(pss->wsi, &msg, USER_QUERY_RESPONSE)
 
           free(msg_struct);
           break;
         }
 
         case ROOM_INFO: {
+          write_message(pss->wsi, NULL, ROOM_INFO_RESPONSE)
           break;
         }
 
@@ -127,7 +150,14 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
           int curr_room_id = room_id++;
           // 将房间与客户端绑定
           pss->room = add_room(curr_room_id, pss, NULL, vhd);
+          pss->room->host = pss;
           pss->room->host_uid = pss->uid;
+          pss->room->difficulty = msg_struct->difficulty;
+
+          struct create_room_response_s msg = {
+              .room_id = pss->room->room_id
+          };
+          write_message(pss->wsi, &msg, CREATE_ROOM_RESPONSE)
 
           free(msg_struct);
           break;
@@ -137,22 +167,25 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
           struct join_room_s *msg_struct = (struct join_room_s *)msg_struct_raw;
           saws_debug("Client %d trying to join room id %d", pss->client_id, msg_struct->room_id);
           room_t *room = get_room_by_id(msg_struct->room_id);
+          struct join_room_response_s msg;
           if (room == NULL) {
             saws_debug("Invalid room id %d", msg_struct->room_id);
-            // TODO: Invalid room_id
+            msg.success = false;
           } else {
             if (room->guest != NULL) {
-              // TODO: Unavailable room
+              msg.success = false;
               saws_debug("Room %d is unavailable", msg_struct->room_id);
             } else {
               // 可以加入房间
+              msg.success = true;
               saws_debug("Client %d successfully joined room %d", pss->client_id, room->room_id);
               room->guest = pss;
               room->guest_uid = pss->uid;
               pss->room = room;
-              // TODO: send back
+              write_message(room->host->wsi, NULL, ROOM_INFO_RESPONSE);
             }
           }
+          write_message(pss->wsi, &msg, JOIN_ROOM_RESPONSE);
 
           free(msg_struct);
           break;
@@ -191,15 +224,7 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
 //        __saws_destroy_message(&vhd->amsg);
 //
 //      // 将收到的消息写入 vhost 的 amsg 域
-//      vhd->amsg.len = len;
-//      /* notice we over-allocate by LWS_PRE */
-//      vhd->amsg.payload = malloc(LWS_PRE + len);
-//      if (!vhd->amsg.payload) {
-//        lwsl_user("OOM: dropping\n");
-//        break;
-//      }
-//
-//      memcpy((char *)vhd->amsg.payload + LWS_PRE, in, len);
+
 //      vhd->current++;
 //
 //      // 告知 vhost 的所有客户（i.e. vhd->pss_list），

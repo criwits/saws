@@ -24,6 +24,14 @@ typedef struct room_s {
   int guest_height;
 
   int difficulty;
+  bool has_boss;
+  int boss_hp_increase;
+  int enemy_max_number;
+  int enemy_bullet_power;
+  int boss_bullet_power;
+  int enemy_speed_y_increase;
+  int enemy_speed_y;
+  int enemy_speed_y_max;
 
 } room_t;
 

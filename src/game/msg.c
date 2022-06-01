@@ -147,6 +147,10 @@ def_msg_encoder(room_ready) {
   cJSON_AddStringToObject(json_node(root), "type", "room_ready");
 }
 
+def_msg_encoder(resolution_response) {
+  // TODO
+}
+
 msg_decoder_t msg_decoder[] = {
     user_query_response,
     room_info_response,

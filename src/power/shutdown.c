@@ -7,7 +7,7 @@
 
 #include <common.h>
 #include <database/mysql.h>
-#include <network/lws.h>
+#include "engine/lws.h"
 
 void stop_server(int status) {
   db_close();

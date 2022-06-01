@@ -9,7 +9,7 @@
 #include <getopt.h>
 
 #include <database/mysql.h>
-#include <network/lws.h>
+#include "engine/lws.h"
 
 static int websocket_port = 1376;
 static char *database_name = "saws_db";
@@ -28,7 +28,7 @@ static int parse_args(int argc, const char *argv[]) {
   };
 
   int o;
-  while ((o = getopt_long(argc, argv, "-p:d:u:w:c:", table, NULL)) != -1) {
+  while ((o = getopt_long(argc, (char *const *) argv, "-p:d:u:w:c:", table, NULL)) != -1) {
     switch (o) {
       case 'p': sscanf(optarg, "%d", &websocket_port); break;
       case 'd': database_name = optarg; break;

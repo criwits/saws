@@ -12,41 +12,40 @@
 
 #include <network/protocol.h>
 #include <game/room.h>
+#include <game/logic.h>
 
 static int client = 0;
 static int room_id = 0;
 
-/**
- * 释放消息
- * @param _msg
- */
-static inline void destroy_message(void *_msg) {
-  struct msg *msg = _msg;
+// 肚肚饿饿，要吃饭饭
 
-  free(msg->payload);
-  msg->payload = NULL;
-  msg->len = 0;
-}
-
-#define __write_message(msg, msg_len) \
-  vhd->amsg.len = msg_len; \
-  vhd->amsg.payload = malloc(LWS_PRE + (msg_len)); \
-  if (!vhd->amsg.payload) { \
-    saws_warn("Out of memory when handling JSON: %s", msg); \
+#define write_message(wsi_s, msg_s, type) \
+  char *msg_buf = encode_msg(msg_s, type); \
+  size_t msg_len = strlen(msg_buf);   \
+  struct msg *new_msg = (struct msg *)malloc(sizeof(struct msg)); \
+  new_msg->len = msg_len;             \
+  new_msg->payload = malloc(LWS_PRE + (msg_len));                 \
+  if (!new_msg->payload) { \
+    saws_warn("Out of memory when handling JSON: %s", msg_buf); \
     break; \
   } \
-  memcpy((char *)vhd->amsg.payload + LWS_PRE, msg, msg_len);
-
-
-#define write_message(wsi, msg, type) \
-  if (vhd->amsg.payload) { \
-    destroy_message(&vhd->amsg); \
-  } \
-  char *msg_buf = encode_msg(msg, type); \
-  size_t msg_len = strlen(msg_buf); \
-  __write_message(msg_buf, msg_len) \
+  memcpy((char *)new_msg->payload + LWS_PRE, msg_buf, msg_len); \
   free(msg_buf); \
-  lws_callback_on_writable(wsi);
+  new_msg->wsi = wsi_s;  \
+  vhd->msg_cnt++; \
+  new_msg->next = vhd->msg_query;     \
+  vhd->msg_query = new_msg;           \
+  lws_callback_on_writable(wsi_s);
+
+
+static void clear_message_query(struct msg *message) {
+  if (message == NULL) {
+    return;
+  }
+  clear_message_query(message->next);
+  free(message->payload);
+  free(message);
+}
 
 /**
  * libwebsockets 回调函数
@@ -57,7 +56,7 @@ static inline void destroy_message(void *_msg) {
  * @param len
  * @return
  */
-static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
+int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
                  void *user, void *in, size_t len) {
   struct per_session_data_saws *pss =
       (struct per_session_data_saws *)user;
@@ -77,6 +76,8 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
       vhd->context = lws_get_context(wsi);
       vhd->protocol = lws_get_protocol(wsi);
       vhd->vhost = lws_get_vhost(wsi);
+      vhd->msg_query = NULL;
+      vhd->msg_cnt = 0;
       saws_log("Server initialised");
       break;
     }
@@ -102,14 +103,25 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
     }
 
     case LWS_CALLBACK_SERVER_WRITEABLE: {
-      // 给客户端发送消息
-      m = lws_write(wsi, ((unsigned char *) vhd->amsg.payload) +
-                         LWS_PRE, vhd->amsg.len, LWS_WRITE_TEXT);
-      if (m < (int) vhd->amsg.len) {
-        lwsl_err("ERROR %d writing to ws\n", m);
-        return -1;
+      // 给当前回调的客户端发送消息
+      for (struct msg *ptr = vhd->msg_query; ptr != NULL; ptr = ptr->next) {
+        if (ptr->wsi == wsi) {
+          m = lws_write(wsi, ((unsigned char *) ptr->payload) +
+                                  LWS_PRE, ptr->len, LWS_WRITE_TEXT);
+          if (m < (int) ptr->len) {
+            saws_err("Error %d occurred while writing to client\n", m);
+            return -1;
+          }
+          vhd->msg_cnt--;
+          ptr->wsi = NULL;
+        }
       }
-
+      // 清除消息缓存，如果已经发完消息
+      if (vhd->msg_cnt == 0) {
+        saws_debug("Cleaning message cache");
+        clear_message_query(vhd->msg_query);
+        vhd->msg_query = NULL;
+      }
       break;
     }
 
@@ -133,7 +145,6 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
               .uid = uid
           };
           write_message(pss->wsi, &msg, USER_QUERY_RESPONSE)
-
           free(msg_struct);
           break;
         }
@@ -153,6 +164,7 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
           pss->room->host = pss;
           pss->room->host_uid = pss->uid;
           pss->room->difficulty = msg_struct->difficulty;
+          set_difficulty(pss->room, pss->room->difficulty);
 
           struct create_room_response_s msg = {
               .room_id = pss->room->room_id
@@ -182,7 +194,7 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
               room->guest = pss;
               room->guest_uid = pss->uid;
               pss->room = room;
-              write_message(room->host->wsi, NULL, ROOM_INFO_RESPONSE);
+              write_message(room->host->wsi, NULL, ROOM_READY);
             }
           }
           write_message(pss->wsi, &msg, JOIN_ROOM_RESPONSE);
@@ -195,6 +207,7 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
           struct resolution_s *msg_struct = (struct resolution_s *)msg_struct_raw;
           saws_debug("Client %d reported its screen resolution %d x %d", pss->client_id, msg_struct->width, msg_struct->height);
           // TODO: check if client has entered a room
+          double real_ratio;
           if (pss->uid == pss->room->host_uid) {
             // 房主
             pss->room->host_width = msg_struct->width;
@@ -206,7 +219,11 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
           }
           if (pss->room->host_width != -1 && pss->room->guest_width != -1) {
             // 此时，双方都已经上报屏幕信息
-            // TODO: 下发缩放比例，开始游戏
+            double host_ratio = pss->room->host_height / (double) pss->room->host_width;
+            double guest_ratio = pss->room->guest_height / (double) pss->room->guest_width;
+            real_ratio = host_ratio > guest_ratio ? guest_ratio : host_ratio;
+
+            // 开始游戏
           }
 
           free(msg_struct);
@@ -219,33 +236,9 @@ static int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
       }
     }
 
-//      // 先清空自己的消息缓存
-//      if (vhd->amsg.payload)
-//        __saws_destroy_message(&vhd->amsg);
-//
-//      // 将收到的消息写入 vhost 的 amsg 域
-
-//      vhd->current++;
-//
-//      // 告知 vhost 的所有客户（i.e. vhd->pss_list），
-//      // 「我们有消息要发给你们」
-//      lws_start_foreach_llp(struct per_session_data_saws **, ppss, vhd->pss_list) {
-//            lws_callback_on_writable((*ppss)->wsi);
-//      } lws_end_foreach_llp(ppss, pss_list);
-//      break;
-
     default:
       break;
   }
 
   return 0;
 }
-
-#define LWS_PLUGIN_PROTOCOL_SAWS \
-  { \
-    "saws", \
-    callback_saws, \
-    sizeof(struct per_session_data_saws), \
-    1024, \
-    0, NULL, 0 \
-  }

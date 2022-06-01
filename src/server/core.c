@@ -7,9 +7,10 @@
 
 #include <common.h>
 #include <libwebsockets.h>
-#include <engine/server.h>
+#include <engine/power.h>
 
-#include "protocol.c"
+#include <network/protocol.h>
+#include "net_protocol.h"
 
 static bool interrupted = false;
 static struct lws_context_creation_info info;

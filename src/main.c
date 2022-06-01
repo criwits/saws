@@ -7,8 +7,8 @@
 #include <common.h>
 #include <signal.h>
 
-#include <engine/server.h>
-#include <network/lws.h>
+#include <engine/power.h>
+#include "engine/lws.h"
 
 #include <timer/timer.h>
 #include <unistd.h>
@@ -18,17 +18,14 @@ static void sig_handler(int sig) {
   stop_server(0);
 }
 
-static void welcome() {
+static inline void welcome() {
   printf("SAWS - Simple Aircraft War Server (ver. 0.1)\n");
   printf("(C) Hans WAN. Licensed under MIT license.\n");
   printf("A part of coursework of OOP lecture, HIT Shenzhen.\n");
+  printf("\n[AD] 来哈工大深圳，体验非凡人生\n");
 }
 
-void print(int session_id, int cnt) {
-  saws_log("%d, %d", session_id, cnt);
-}
-
-static void bind_signal() {
+static inline void bind_signal() {
   signal(SIGTERM, sig_handler);
   signal(SIGINT, sig_handler);
 }

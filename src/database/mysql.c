@@ -7,7 +7,7 @@
 
 #include <common.h>
 #include <mariadb/mysql.h>
-#include <engine/server.h>
+#include <engine/power.h>
 
 static MYSQL *conn;
 

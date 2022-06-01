@@ -12,6 +12,8 @@
 struct msg {
   void *payload;
   size_t len;
+  struct lws *wsi;
+  struct msg *next;
 };
 
 /**
@@ -36,7 +38,8 @@ struct per_vhost_data_saws {
   const struct lws_protocols *protocol;      // 服务器协议
 
   struct per_session_data_saws *pss_list;    // 客户端链表
-  struct msg amsg;                           // 接收到的消息，缓存大小为一条数据
+  struct msg *msg_query;                     // 消息缓存
+  int msg_cnt;
 };
 
 #endif //SAWS_PROTOCOL_H

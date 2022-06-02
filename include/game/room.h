@@ -5,14 +5,17 @@
 #include <libwebsockets.h>
 
 #include <network/protocol.h>
+#include "aircraft.h"
 
 typedef struct room_s {
   struct room_s *next;
   int room_id;
+  bool running;
   
   int host_uid;
   int guest_uid;
-  int timer_id;
+
+  struct timer_session_s *timer;
 
   struct per_session_data_saws *host;
   struct per_session_data_saws *guest;
@@ -23,6 +26,8 @@ typedef struct room_s {
   int guest_width;
   int guest_height;
 
+  double ratio;
+
   int difficulty;
   bool has_boss;
   int boss_hp_increase;
@@ -32,6 +37,11 @@ typedef struct room_s {
   int enemy_speed_y_increase;
   int enemy_speed_y;
   int enemy_speed_y_max;
+
+  int npc_id;
+  int npc_cnt;
+  aircraft_t *npc_list;
+
 
 } room_t;
 

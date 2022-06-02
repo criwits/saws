@@ -22,6 +22,7 @@ static struct lws_protocols protocols[] = {
 };
 
 int lws_loop() {
+  saws_log("Start listening with WebSocket protocol");
   int n = 0;
   while (n >= 0 && !interrupted) {
     n = lws_service(context, 0);

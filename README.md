@@ -137,7 +137,7 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
 
 ```json
 {
-  "type": "resolution_response",
+  "type": "game_start",
   "ratio": 1.6,
   "enemy_bullet_power": 30,
   "boss_bullet_power": 45
@@ -150,7 +150,7 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
 ```json
 {
   "type": "npc_spawn",
-  "mob": "mob",
+  "mob": 0,
   "id": 14,
   "location_x": 134,
   "location_y": 476,

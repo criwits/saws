@@ -20,23 +20,24 @@ static int room_id = 0;
 // 肚肚饿饿，要吃饭饭
 
 #define write_message(wsi_s, msg_s, type) \
-  char *msg_buf = encode_msg(msg_s, type); \
-  size_t msg_len = strlen(msg_buf);   \
-  struct msg *new_msg = (struct msg *)malloc(sizeof(struct msg)); \
-  new_msg->len = msg_len;             \
-  new_msg->payload = malloc(LWS_PRE + (msg_len));                 \
-  if (!new_msg->payload) { \
-    saws_warn("Out of memory when handling JSON: %s", msg_buf); \
-    break; \
-  } \
-  memcpy((char *)new_msg->payload + LWS_PRE, msg_buf, msg_len); \
-  free(msg_buf); \
-  new_msg->wsi = wsi_s;  \
-  vhd->msg_cnt++; \
-  new_msg->next = vhd->msg_query;     \
-  vhd->msg_query = new_msg;           \
-  lws_callback_on_writable(wsi_s);
-
+  do {                                        \
+    char *msg_buf = encode_msg(msg_s, type); \
+    size_t msg_len = strlen(msg_buf);   \
+    struct msg *new_msg = (struct msg *)malloc(sizeof(struct msg)); \
+    new_msg->len = msg_len;             \
+    new_msg->payload = malloc(LWS_PRE + (msg_len));                 \
+    if (!new_msg->payload) { \
+      saws_warn("Out of memory when handling JSON: %s", msg_buf); \
+      break; \
+    } \
+    memcpy((char *)new_msg->payload + LWS_PRE, msg_buf, msg_len); \
+    free(msg_buf); \
+    new_msg->wsi = wsi_s;  \
+    vhd->msg_cnt++; \
+    new_msg->next = vhd->msg_query;     \
+    vhd->msg_query = new_msg;           \
+    lws_callback_on_writable(wsi_s);        \
+  } while(0);
 
 static void clear_message_query(struct msg *message) {
   if (message == NULL) {
@@ -219,11 +220,40 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
           }
           if (pss->room->host_width != -1 && pss->room->guest_width != -1) {
             // 此时，双方都已经上报屏幕信息
+            saws_debug("%d, %d", pss->room->host_width, pss->room->guest_width);
             double host_ratio = pss->room->host_height / (double) pss->room->host_width;
             double guest_ratio = pss->room->guest_height / (double) pss->room->guest_width;
             real_ratio = host_ratio > guest_ratio ? guest_ratio : host_ratio;
 
             // 开始游戏
+            pss->room->ratio = real_ratio;
+
+            struct game_start_s msg = {
+                .ratio = real_ratio,
+                .boss_bullet_power = pss->room->boss_bullet_power,
+                .enemy_bullet_power = pss->room->enemy_bullet_power
+            };
+
+            write_message(pss->room->host->wsi, &msg, GAME_START)
+            write_message(pss->room->guest->wsi, &msg, GAME_START)
+
+            start_game(pss->room);
+          }
+
+          free(msg_struct);
+          break;
+        }
+
+        case MOVEMENT: {
+          struct movement_s *msg_struct = (struct movement_s *)msg_struct_raw;
+          struct teammate_movement_s msg = {
+              .new_x = msg_struct->new_x,
+              .new_y = msg_struct->new_y
+          };
+          if (pss->uid == pss->room->host_uid) {
+            write_message(pss->room->guest->wsi, &msg, TEAMMATE_MOVEMENT)
+          } else {
+            write_message(pss->room->host->wsi, &msg, TEAMMATE_MOVEMENT)
           }
 
           free(msg_struct);
@@ -241,4 +271,8 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
   }
 
   return 0;
+}
+
+void send_message(struct per_vhost_data_saws *vhd, struct lws *wsi, const void *msg, int type) {
+  write_message(wsi, msg, type)
 }

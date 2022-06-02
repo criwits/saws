@@ -8,5 +8,6 @@
 #define SAWS_LOGIC_H
 
 void set_difficulty(room_t *room, int difficulty);
+void start_game(room_t *room);
 
 #endif //SAWS_LOGIC_H

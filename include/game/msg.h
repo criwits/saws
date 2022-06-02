@@ -54,7 +54,10 @@ enum {
   ROOM_INFO_RESPONSE,
   CREATE_ROOM_RESPONSE,
   JOIN_ROOM_RESPONSE,
-  ROOM_READY
+  ROOM_READY,
+  GAME_START,
+  NPC_SPAWN,
+  TEAMMATE_MOVEMENT
 };
 
 struct user_query_response_s {
@@ -67,6 +70,27 @@ struct create_room_response_s {
 
 struct join_room_response_s {
   bool success;
+};
+
+struct game_start_s {
+  double ratio;
+  int enemy_bullet_power;
+  int boss_bullet_power;
+};
+
+struct npc_spawn_s {
+  int mob;
+  int id;
+  int location_x;
+  int location_y;
+  int speed_x;
+  int speed_y;
+  int hp;
+};
+
+struct teammate_movement_s {
+  int new_x;
+  int new_y;
 };
 
 #endif //SAWS_MSG_H

@@ -40,6 +40,7 @@ void set_difficulty(room_t *room, int difficulty) {
       room->enemy_speed_y_increase = 1;
       room->enemy_speed_y = 6;
       room->enemy_speed_y_max = 10;
+      break;
     default:
       assert(0);
       break;

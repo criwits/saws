@@ -147,8 +147,31 @@ def_msg_encoder(room_ready) {
   cJSON_AddStringToObject(json_node(root), "type", "room_ready");
 }
 
-def_msg_encoder(resolution_response) {
-  // TODO
+def_msg_encoder(game_start) {
+  struct game_start_s *s = (struct game_start_s *)msg_struct;
+  cJSON_AddStringToObject(json_node(root), "type", "game_start");
+  cJSON_AddNumberToObject(json_node(root), "ratio", s->ratio);
+  cJSON_AddNumberToObject(json_node(root), "enemy_bullet_power", s->enemy_bullet_power);
+  cJSON_AddNumberToObject(json_node(root), "boss_bullet_power", s->boss_bullet_power);
+}
+
+def_msg_encoder(npc_spawn) {
+  struct npc_spawn_s *s = (struct npc_spawn_s *)msg_struct;
+  cJSON_AddStringToObject(json_node(root), "type", "npc_spawn");
+  cJSON_AddNumberToObject(json_node(root), "mob", s->mob);
+  cJSON_AddNumberToObject(json_node(root), "id", s->id);
+  cJSON_AddNumberToObject(json_node(root), "location_x", s->location_x);
+  cJSON_AddNumberToObject(json_node(root), "location_y", s->location_y);
+  cJSON_AddNumberToObject(json_node(root), "speed_x", s->speed_x);
+  cJSON_AddNumberToObject(json_node(root), "speed_y", s->speed_y);
+  cJSON_AddNumberToObject(json_node(root), "hp", s->hp);
+}
+
+def_msg_encoder(teammate_movement) {
+  struct teammate_movement_s *s = (struct teammate_movement_s *)msg_struct;
+  cJSON_AddStringToObject(json_node(root), "type", "teammate_movement");
+  cJSON_AddNumberToObject(json_node(root), "new_x", s->new_x);
+  cJSON_AddNumberToObject(json_node(root), "new_y", s->new_y);
 }
 
 msg_decoder_t msg_decoder[] = {
@@ -157,6 +180,9 @@ msg_decoder_t msg_decoder[] = {
     create_room_response,
     join_room_response,
     room_ready,
+    game_start,
+    npc_spawn,
+    teammate_movement,
     NULL
 };
 

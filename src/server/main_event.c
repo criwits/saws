@@ -245,6 +245,8 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
         }
 
         case MOVEMENT: {
+          // 游戏双方之任何一方发来「移动」消息，
+          // 都转发到另一边。
           struct movement_s *msg_struct = (struct movement_s *)msg_struct_raw;
           struct teammate_movement_s msg = {
               .new_x = msg_struct->new_x,

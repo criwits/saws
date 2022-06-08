@@ -14,6 +14,7 @@ struct msg {
   size_t len;
   struct lws *wsi;
   struct msg *next;
+  struct msg *prev;
 };
 
 /**
@@ -39,7 +40,6 @@ struct per_vhost_data_saws {
 
   struct per_session_data_saws *pss_list;    // 客户端链表
   struct msg *msg_query;                     // 消息缓存
-  int msg_cnt;
 };
 
 #endif //SAWS_PROTOCOL_H

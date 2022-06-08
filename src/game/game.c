@@ -36,8 +36,8 @@ void create_npc(room_t *room, int call_cnt) {
       msg.mob = 0;
     }
     room->npc_cnt++;
-    send_message(room->vhost, room->host->wsi, &msg, NPC_SPAWN);
-    send_message(room->vhost, room->guest->wsi, &msg, NPC_SPAWN);
+    // send_message(room->vhost, room->host->wsi, &msg, NPC_SPAWN);
+    // send_message(room->vhost, room->guest->wsi, &msg, NPC_SPAWN);
   }
 }
 

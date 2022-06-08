@@ -22,21 +22,26 @@ static int room_id = 0;
 #define write_message(wsi_s, msg_s, type) \
   do {                                        \
     char *msg_buf = encode_msg(msg_s, type); \
-    size_t msg_len = strlen(msg_buf);   \
-    struct msg *new_msg = (struct msg *)malloc(sizeof(struct msg)); \
-    new_msg->len = msg_len;             \
-    new_msg->payload = malloc(LWS_PRE + (msg_len));                 \
-    if (!new_msg->payload) { \
-      saws_warn("Out of memory when handling JSON: %s", msg_buf); \
-      break; \
-    } \
-    memcpy((char *)new_msg->payload + LWS_PRE, msg_buf, msg_len); \
-    free(msg_buf); \
-    new_msg->wsi = wsi_s;  \
-    vhd->msg_cnt++; \
-    new_msg->next = vhd->msg_query;     \
-    vhd->msg_query = new_msg;           \
-    lws_callback_on_writable(wsi_s);        \
+    size_t msg_len = strlen(msg_buf);     \
+    if (msg_len > 0) {                                      \
+      struct msg *new_msg = (struct msg *)malloc(sizeof(struct msg)); \
+      new_msg->len = msg_len;             \
+      new_msg->payload = malloc(LWS_PRE + (msg_len));                 \
+      if (!new_msg->payload) { \
+        saws_warn("Out of memory when handling JSON: %s", msg_buf); \
+        break; \
+      } \
+      memcpy((char *)new_msg->payload + LWS_PRE, msg_buf, msg_len); \
+      free(msg_buf); \
+      new_msg->wsi = wsi_s;  \
+      new_msg->next = vhd->msg_query;       \
+      if (vhd->msg_query != NULL) {    \
+        vhd->msg_query->prev = new_msg;       \
+      }  \
+      new_msg->prev = NULL; \
+      vhd->msg_query = new_msg;           \
+      lws_callback_on_writable(wsi_s);      \
+    }                                        \
   } while(0);
 
 static void clear_message_query(struct msg *message) {
@@ -78,7 +83,6 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
       vhd->protocol = lws_get_protocol(wsi);
       vhd->vhost = lws_get_vhost(wsi);
       vhd->msg_query = NULL;
-      vhd->msg_cnt = 0;
       saws_log("Server initialised");
       break;
     }
@@ -105,23 +109,35 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
 
     case LWS_CALLBACK_SERVER_WRITEABLE: {
       // 给当前回调的客户端发送消息
-      for (struct msg *ptr = vhd->msg_query; ptr != NULL; ptr = ptr->next) {
+      for (struct msg *ptr = vhd->msg_query; ptr != NULL;) {
         if (ptr->wsi == wsi) {
           m = lws_write(wsi, ((unsigned char *) ptr->payload) +
                                   LWS_PRE, ptr->len, LWS_WRITE_TEXT);
-          if (m < (int) ptr->len) {
-            saws_err("Error %d occurred while writing to client\n", m);
+          size_t msg_len = ptr->len;
+          struct msg *next = ptr->next;
+
+          // 删除
+          if (ptr->prev == NULL && ptr->next == NULL) {
+            vhd->msg_query = NULL;
+          } else if (ptr->prev == NULL) {
+            ptr->next->prev = NULL;
+          } else if (ptr->next == NULL) {
+            ptr->prev->next = NULL;
+          } else {
+            ptr->prev->next = ptr->next;
+            ptr->next->prev = ptr->prev;
+          }
+          free(ptr->payload);
+          free(ptr);
+
+          if (m < (int) msg_len) {
+            saws_err("Error %d occurred while writing to client", m);
             return -1;
           }
-          vhd->msg_cnt--;
-          ptr->wsi = NULL;
+          ptr = next;
+        } else {
+          ptr = ptr->next;
         }
-      }
-      // 清除消息缓存，如果已经发完消息
-      if (vhd->msg_cnt == 0) {
-        saws_debug("Cleaning message cache");
-        clear_message_query(vhd->msg_query);
-        vhd->msg_query = NULL;
       }
       break;
     }

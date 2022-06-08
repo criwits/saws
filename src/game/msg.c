@@ -90,6 +90,7 @@ int decode_msg(const char *msg, void **msg_struct) {
   cJSON *json_node(root) = cJSON_Parse(msg);
   json_parse_node(root, type)
   if (json_node(type) == NULL) {
+    saws_warn("%s", msg);
     return RECV_MSG_CNT;
   }
   int type = 0;
@@ -186,7 +187,7 @@ msg_decoder_t msg_decoder[] = {
     NULL
 };
 
-char inline *encode_msg(const void *msg_struct, int type) {
+char *encode_msg(const void *msg_struct, int type) {
   cJSON *json_node(root) = cJSON_CreateObject();
   msg_decoder[type](json_node(root), msg_struct);
   char *ret =  cJSON_Print(json_node(root));

@@ -30,12 +30,13 @@ int lws_loop() {
   return n;
 }
 
+
 void lws_init(int port) {
   memset(&info, 0, sizeof info);
   info.port = port;
   info.protocols = protocols;
   info.pvo = NULL;
-  info.pt_serv_buf_size = 32 * 1024;
+  info.pt_serv_buf_size = 64 * 1024;
   info.options = LWS_SERVER_OPTION_VALIDATE_UTF8 |
                  LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
   context = lws_create_context(&info);

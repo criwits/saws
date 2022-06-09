@@ -36,7 +36,7 @@ void lws_init(int port) {
   info.port = port;
   info.protocols = protocols;
   info.pvo = NULL;
-  info.pt_serv_buf_size = 64 * 1024;
+  info.pt_serv_buf_size = 4096;
   info.options = LWS_SERVER_OPTION_VALIDATE_UTF8 |
                  LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
   context = lws_create_context(&info);

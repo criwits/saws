@@ -23,8 +23,6 @@ room_t *add_room(int room_id, struct per_session_data_saws *host, struct per_ses
   room->vhost = vhost;
   room->running = false;
 
-  room->timer = NULL;
-
   room->host = host;
   room->guest = guest;
   room->host_uid = -1;
@@ -36,7 +34,6 @@ room_t *add_room(int room_id, struct per_session_data_saws *host, struct per_ses
   room->guest_width = -1;
 
   room->npc_cnt = 0;
-  room->npc_id = 0;
   room->npc_list = NULL;
 
   room_cnt++;

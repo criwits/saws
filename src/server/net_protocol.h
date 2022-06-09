@@ -11,13 +11,13 @@
 #define LWS_PLUGIN_PROTOCOL_SAWS \
   { \
     "saws", \
-    callback_saws, \
+    callback_event, \
     sizeof(struct per_session_data_saws), \
-    16384, \
-    0, NULL, 16384 \
+    512 * 1024, \
+    0, NULL, 512 * 1024 \
   }
 
-int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
-                  void *user, void *in, size_t len);
+int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
+                   void *user, void *in, size_t len);
 
 #endif //SAWS_NET_PROTOCOL_H

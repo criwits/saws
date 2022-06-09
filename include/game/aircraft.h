@@ -10,6 +10,7 @@ typedef struct aircraft_s {
   struct aircraft_s *next;
   struct aircraft_s *prev;
   int id;
+  int mob;
   int hp;
 } aircraft_t;
 

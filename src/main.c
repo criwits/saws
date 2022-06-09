@@ -9,8 +9,6 @@
 
 #include <engine/power.h>
 #include "engine/lws.h"
-
-#include <timer/timer.h>
 #include <unistd.h>
 
 static void sig_handler(int sig) {

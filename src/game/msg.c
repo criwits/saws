@@ -10,6 +10,7 @@
 #include <utils/json_macro.h>
 #include <game/room.h>
 
+#include <setjmp.h>
 
 /** DECODE **/
 
@@ -20,7 +21,9 @@ const char *msg_recv_type[] = {
     "join_room",
     "resolution",
     "movement",
-    "damage"
+    "damage",
+    "npc_upload",
+    "remove_aircraft"
 };
 
 typedef void (*msg_handler_t)(cJSON *json_node(root), void **msg_struct);
@@ -80,17 +83,48 @@ def_msg_handler(damage) {
   s->id = json_node(id)->valueint;
 }
 
+def_msg_handler(npc_upload) {
+  *msg_struct = malloc(sizeof(struct npc_upload_s));
+  struct npc_upload_s *s = (struct npc_upload_s *)(*msg_struct);
+  json_parse_node(root, mob)
+  json_parse_node(root, id)
+  json_parse_node(root, location_x)
+  json_parse_node(root, location_y)
+  json_parse_node(root, speed_x)
+  json_parse_node(root, speed_y)
+  json_parse_node(root, hp)
+  s->mob = json_node(mob)->valueint;
+  s->id = json_node(id)->valueint;
+  s->location_x = json_node(location_x)->valueint;
+  s->location_y = json_node(location_y)->valueint;
+  s->speed_x = json_node(speed_x)->valueint;
+  s->speed_y = json_node(speed_y)->valueint;
+  s->hp = json_node(hp)->valueint;
+}
+
+def_msg_handler(remove_aircraft) {
+  *msg_struct = malloc(sizeof(struct remove_aircraft_s));
+  struct remove_aircraft_s *s = (struct remove_aircraft_s *)(*msg_struct);
+  json_parse_node(root, remove)
+  s->remove = json_node(remove)->valueint;
+}
+
 msg_handler_t msg_handler[] = {
     user_query, room_info, create_room, join_room,
-    resolution, movement, damage,
+    resolution, movement, damage, npc_upload, remove_aircraft,
     NULL
 };
 
 int decode_msg(const char *msg, void **msg_struct) {
   cJSON *json_node(root) = cJSON_Parse(msg);
+  if (json_node(root) == NULL) {
+    saws_warn("Cannot parse given string as a JSON:");
+    saws_warn("%s", msg);
+  }
   json_parse_node(root, type)
   if (json_node(type) == NULL) {
     saws_warn("%s", msg);
+    cJSON_Delete(json_node(root));
     return RECV_MSG_CNT;
   }
   int type = 0;
@@ -175,6 +209,13 @@ def_msg_encoder(teammate_movement) {
   cJSON_AddNumberToObject(json_node(root), "new_y", s->new_y);
 }
 
+def_msg_encoder(score) {
+  struct score_s *s = (struct score_s *)msg_struct;
+  cJSON_AddStringToObject(json_node(root), "type", "score");
+  cJSON_AddNumberToObject(json_node(root), "remove", s->remove);
+  cJSON_AddNumberToObject(json_node(root), "score", s->score);
+}
+
 msg_decoder_t msg_decoder[] = {
     user_query_response,
     room_info_response,
@@ -184,6 +225,7 @@ msg_decoder_t msg_decoder[] = {
     game_start,
     npc_spawn,
     teammate_movement,
+    score,
     NULL
 };
 

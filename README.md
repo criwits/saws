@@ -145,6 +145,21 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
 ```
 ---
 
+### 上传 NPC 信息
+
+```json
+{
+  "type": "npc_upload",
+  "mob": 0,
+  "id": 14,
+  "location_x": 134,
+  "location_y": 476,
+  "speed_x": 0,
+  "speed_y": 3,
+  "hp": 10
+}
+```
+
 ### 下发 NPC 信息
 
 ```json
@@ -197,12 +212,23 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端。
   "score": 20
 }
 ```
+如果 remove 为 -1，无条件得分。
 
 ### 上传受伤信息
 ```json
 {
   "type": "hurt",
   "damage": 20
+}
+```
+
+### 无条件消除飞机
+「飞机飞出边界」由房主负责。
+
+```json
+{
+  "type": "remove_aircraft",
+  "remove": 14
 }
 ```
 

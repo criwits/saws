@@ -7,43 +7,61 @@
 
 #include <common.h>
 #include <game/room.h>
-#include <timer/timer.h>
-#include <time.h>
-#include <game/msg.h>
-#include <network/send.h>
-#include <sys/time.h>
-
-void create_npc(room_t *room, int call_cnt) {
-  if (room->npc_cnt < room->enemy_max_number) {
-    // 可以生成 NPC
-    saws_debug("Spawn NPC for room id %d", room->room_id);
-    struct timeval tval;
-    gettimeofday( &tval, NULL );
-    srand((unsigned) tval.tv_usec);
-    struct npc_spawn_s msg = {
-        .id = room->npc_id++,
-        .location_y = rand() % (int)(512 * room->ratio),
-        .location_x = rand() % 512,
-        .speed_y = room->enemy_speed_y
-    };
-    if (rand() % 10 <3) {
-      msg.speed_x = rand() % 2 + 1;
-      msg.hp = 20;
-      msg.mob = 1;
-    } else {
-      msg.speed_x = 0;
-      msg.hp = 10;
-      msg.mob = 0;
-    }
-    room->npc_cnt++;
-    send_message(room->vhost, room->host->wsi, &msg, NPC_SPAWN);
-    send_message(room->vhost, room->guest->wsi, &msg, NPC_SPAWN);
-  }
-}
 
 void start_game(room_t *room) {
   saws_debug("Room %d starts", room->room_id);
   room->running = true;
-  room->timer = start_timer(room, 800, create_npc);
+}
 
+void add_npc(int id, int hp, int mob, room_t *room) {
+  room->npc_cnt++;
+  if (room->npc_list == NULL) {
+    room->npc_list = (aircraft_t *) malloc(sizeof(aircraft_t));
+    room->npc_list->id = id;
+    room->npc_list->hp = hp;
+    room->npc_list->mob = mob;
+    room->npc_list->next = NULL;
+    room->npc_list->prev = NULL;
+  } else {
+    room->npc_list->prev = (aircraft_t *) malloc(sizeof(aircraft_t));
+    room->npc_list->prev->id = id;
+    room->npc_list->prev->hp = hp;
+    room->npc_list->prev->mob = mob;
+    room->npc_list->prev->prev = NULL;
+    room->npc_list->prev->next = room->npc_list;
+    room->npc_list = room->npc_list->prev;
+  }
+}
+
+void remove_npc(int id, room_t *room) {
+  for (aircraft_t *ptr = room->npc_list; ptr != NULL;) {
+    if (ptr->id == id) {
+      room->npc_cnt--;
+      aircraft_t *next = ptr->next;
+      if (ptr->prev == NULL && ptr->next == NULL) {
+        room->npc_list = NULL;
+      } else if (ptr->prev == NULL) {
+        ptr->next->prev = NULL;
+        room->npc_list = room->npc_list->next;
+      } else if (ptr->next == NULL) {
+        ptr->prev->next = NULL;
+      } else {
+        ptr->prev->next = ptr->next;
+        ptr->next->prev = ptr->prev;
+      }
+      free(ptr);
+      ptr = next;
+    } else {
+      ptr = ptr->next;
+    }
+  }
+}
+
+aircraft_t *get_npc(int id, room_t *room) {
+  for (aircraft_t *ptr = room->npc_list; ptr != NULL; ptr = ptr->next) {
+    if (ptr->id == id) {
+      return ptr;
+    }
+  }
+  return NULL;
 }

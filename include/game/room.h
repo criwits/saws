@@ -15,8 +15,6 @@ typedef struct room_s {
   int host_uid;
   int guest_uid;
 
-  struct timer_session_s *timer;
-
   struct per_session_data_saws *host;
   struct per_session_data_saws *guest;
   struct per_vhost_data_saws *vhost;
@@ -38,11 +36,8 @@ typedef struct room_s {
   int enemy_speed_y;
   int enemy_speed_y_max;
 
-  int npc_id;
   int npc_cnt;
   aircraft_t *npc_list;
-
-
 } room_t;
 
 room_t *add_room(int room_id, struct per_session_data_saws *host, struct per_session_data_saws *guest,

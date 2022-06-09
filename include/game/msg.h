@@ -14,6 +14,8 @@ enum {
   RESOLUTION,
   MOVEMENT,
   DAMAGE,
+  NPC_UPLOAD,
+  REMOVE_AIRCRAFT,
   RECV_MSG_CNT
 };
 
@@ -42,10 +44,25 @@ struct movement_s {
   int new_y;
 };
 
+struct npc_upload_s {
+  int mob;
+  int id;
+  int location_x;
+  int location_y;
+  int speed_x;
+  int speed_y;
+  int hp;
+};
+
 struct damage_s {
   int id;
   int hp_decrease;
 };
+
+struct remove_aircraft_s {
+  int remove;
+};
+
 
 /** ENCODE **/
 
@@ -57,7 +74,8 @@ enum {
   ROOM_READY,
   GAME_START,
   NPC_SPAWN,
-  TEAMMATE_MOVEMENT
+  TEAMMATE_MOVEMENT,
+  SCORE
 };
 
 struct user_query_response_s {
@@ -92,5 +110,12 @@ struct teammate_movement_s {
   int new_x;
   int new_y;
 };
+
+struct score_s {
+  int remove;
+  int score;
+};
+
+void msg_jump();
 
 #endif //SAWS_MSG_H

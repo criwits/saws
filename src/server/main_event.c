@@ -14,10 +14,11 @@
 #include <game/room.h>
 #include <game/logic.h>
 
+#include <setjmp.h>
+
 static int client = 0;
 static int room_id = 0;
-
-// 肚肚饿饿，要吃饭饭
+static jmp_buf encode_jmp_buf;
 
 #define write_message(wsi_s, msg_s, type) \
   do {                                        \
@@ -44,14 +45,6 @@ static int room_id = 0;
     }                                        \
   } while(0);
 
-static void clear_message_query(struct msg *message) {
-  if (message == NULL) {
-    return;
-  }
-  clear_message_query(message->next);
-  free(message->payload);
-  free(message);
-}
 
 /**
  * libwebsockets 回调函数
@@ -62,8 +55,8 @@ static void clear_message_query(struct msg *message) {
  * @param len
  * @return
  */
-int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
-                 void *user, void *in, size_t len) {
+int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
+                   void *user, void *in, size_t len) {
   struct per_session_data_saws *pss =
       (struct per_session_data_saws *)user;
   struct per_vhost_data_saws *vhd =
@@ -109,8 +102,15 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
 
     case LWS_CALLBACK_SERVER_WRITEABLE: {
       // 给当前回调的客户端发送消息
+      ///
+      if (vhd->msg_query != NULL && vhd->msg_query->next == vhd->msg_query) {
+        saws_warn("Loop detected, emergency clear buffer");
+        free(vhd->msg_query);
+        vhd->msg_query = NULL;
+        break;
+      }
       for (struct msg *ptr = vhd->msg_query; ptr != NULL;) {
-        if (ptr->wsi == wsi) {
+        if (ptr->wsi == wsi && ptr->payload != NULL) {
           m = lws_write(wsi, ((unsigned char *) ptr->payload) +
                                   LWS_PRE, ptr->len, LWS_WRITE_TEXT);
           size_t msg_len = ptr->len;
@@ -121,6 +121,7 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
             vhd->msg_query = NULL;
           } else if (ptr->prev == NULL) {
             ptr->next->prev = NULL;
+            vhd->msg_query = vhd->msg_query->next;
           } else if (ptr->next == NULL) {
             ptr->prev->next = NULL;
           } else {
@@ -135,6 +136,7 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
             return -1;
           }
           ptr = next;
+          // break;
         } else {
           ptr = ptr->next;
         }
@@ -144,6 +146,13 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
 
     case LWS_CALLBACK_RECEIVE: {
       void *msg_struct_raw = NULL;
+      // char *message_buffer = (char *) malloc(len);
+      // memcpy(message_buffer, in, len);
+      // int msg_type = decode_msg(message_buffer, &msg_struct_raw);
+      if (setjmp(encode_jmp_buf)) {
+        saws_warn("Error occurred and callback was broken");
+        break;
+      }
       int msg_type = decode_msg(in, &msg_struct_raw);
       switch (msg_type) {
         case USER_QUERY: {
@@ -236,7 +245,6 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
           }
           if (pss->room->host_width != -1 && pss->room->guest_width != -1) {
             // 此时，双方都已经上报屏幕信息
-            saws_debug("%d, %d", pss->room->host_width, pss->room->guest_width);
             double host_ratio = pss->room->host_height / (double) pss->room->host_width;
             double guest_ratio = pss->room->guest_height / (double) pss->room->guest_width;
             real_ratio = host_ratio > guest_ratio ? guest_ratio : host_ratio;
@@ -278,10 +286,88 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
           break;
         }
 
+        case NPC_UPLOAD: {
+          struct npc_upload_s *msg_struct = (struct npc_upload_s *)msg_struct_raw;
+          struct npc_spawn_s msg = {
+              .mob = msg_struct->mob,
+              .id = msg_struct->id,
+              .location_x = msg_struct->location_x,
+              .location_y = msg_struct->location_y,
+              .speed_x = msg_struct->speed_x,
+              .speed_y = msg_struct->speed_y,
+              .hp = msg_struct->hp
+          };
+
+          add_npc(msg.id, msg.hp, msg.mob, pss->room);
+          saws_debug("\b[Room %d] Spawned NPC with id %d", pss->room->room_id, msg.id);
+
+          write_message(pss->room->guest->wsi, &msg, NPC_SPAWN)
+          free(msg_struct);
+          break;
+        }
+
+        case REMOVE_AIRCRAFT: {
+          struct remove_aircraft_s *msg_struct = (struct remove_aircraft_s *) msg_struct_raw;
+          remove_npc(msg_struct->remove, pss->room);
+          saws_debug("\b[Room %d] Client %d removed aircraft with id %d", pss->room->room_id, pss->client_id, msg_struct->remove);
+          free(msg_struct);
+          break;
+        }
+
+        case DAMAGE: {
+          struct damage_s *msg_struct = (struct damage_s *) msg_struct_raw;
+          aircraft_t *aircraft = get_npc(msg_struct->id, pss->room);
+
+          if (aircraft != NULL) {
+            // 扣血
+            aircraft->hp -= (msg_struct->hp_decrease);
+            if (aircraft->hp <= 0) {
+              // 加分
+              int score = aircraft->mob ? 20 : 10;
+              // 删除飞机
+              // remove_npc(msg_struct->id, pss->room);
+              saws_debug("\b[Room %d] Client %d kills NPC with id %d and get score %d", pss->room->room_id, pss->client_id, aircraft->id, score);
+              if (pss->wsi == pss->room->host->wsi) {
+                // 当前是房主
+                struct score_s host = {
+                    .remove = msg_struct->id,
+                    .score = score
+                };
+                struct score_s guest = {
+                    .remove = msg_struct->id,
+                    .score = 0
+                };
+                write_message(pss->room->host->wsi, &host, SCORE)
+                write_message(pss->room->guest->wsi, &guest, SCORE)
+              } else {
+                // 当前是房客
+                struct score_s host = {
+                    .remove = msg_struct->id,
+                    .score = 0
+                };
+                struct score_s guest = {
+                    .remove = msg_struct->id,
+                    .score = score
+                };
+                write_message(pss->room->host->wsi, &host, SCORE)
+                write_message(pss->room->guest->wsi, &guest, SCORE)
+              }
+
+            }
+          }
+
+          free(msg_struct);
+          break;
+        }
+
         default: {
+          saws_warn("Unhandled message type");
           break;
         }
       }
+
+      // free(message_buffer);
+      break;
     }
 
     default:
@@ -291,6 +377,6 @@ int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,
   return 0;
 }
 
-void send_message(struct per_vhost_data_saws *vhd, struct lws *wsi, const void *msg, int type) {
-  write_message(wsi, msg, type)
+void msg_jump() {
+  longjmp(encode_jmp_buf, -1);
 }

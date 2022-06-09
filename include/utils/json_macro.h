@@ -10,7 +10,9 @@
 #define json_parse_node(parent, item) \
   cJSON *json_node(item); \
   if ((json_node(item) = cJSON_GetObjectItem(json_node(parent), str(item))) == NULL) { \
-    saws_warn("Cannot parse `%s` field in given JSON", str(item));                    \
+    saws_warn("Cannot parse `%s` field in given JSON", str(item));                     \
+    cJSON_Delete(json_node(root)); \
+    msg_jump(); \
   }
 
 

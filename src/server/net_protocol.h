@@ -13,8 +13,8 @@
     "saws", \
     callback_saws, \
     sizeof(struct per_session_data_saws), \
-    1024, \
-    0, NULL, 0 \
+    16384, \
+    0, NULL, 16384 \
   }
 
 int callback_saws(struct lws *wsi, enum lws_callback_reasons reason,

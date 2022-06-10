@@ -324,8 +324,6 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
             if (aircraft->hp <= 0) {
               // 加分
               int score = aircraft->mob ? 20 : 10;
-              // 删除飞机
-              // remove_npc(msg_struct->id, pss->room);
               saws_debug("\b[Room %d] Client %d kills NPC with id %d and get score %d", pss->room->room_id, pss->client_id, aircraft->id, score);
               if (pss->wsi == pss->room->host->wsi) {
                 // 当前是房主
@@ -352,7 +350,8 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
                 write_message(pss->room->host->wsi, &host, SCORE)
                 write_message(pss->room->guest->wsi, &guest, SCORE)
               }
-
+              // 删除飞机
+              remove_npc(msg_struct->id, pss->room);
             }
           }
 

@@ -197,7 +197,6 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           pss->room->host = pss;
           pss->room->host_uid = pss->uid;
           pss->room->difficulty = msg_struct->difficulty;
-          set_difficulty(pss->room, pss->room->difficulty);
 
           struct create_room_response_s msg = {
               .room_id = pss->room->room_id
@@ -257,12 +256,8 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
             real_ratio = host_ratio > guest_ratio ? guest_ratio : host_ratio;
 
             // 开始游戏
-            pss->room->ratio = real_ratio;
-
             struct game_start_s msg = {
                 .ratio = real_ratio,
-                .boss_bullet_power = pss->room->boss_bullet_power,
-                .enemy_bullet_power = pss->room->enemy_bullet_power
             };
 
             write_message(pss->room->host->wsi, &msg, GAME_START)

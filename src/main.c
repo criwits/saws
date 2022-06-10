@@ -20,7 +20,7 @@ static inline void welcome() {
   printf("SAWS - Simple Aircraft War Server (ver. 0.1)\n");
   printf("(C) Hans WAN. Licensed under MIT license.\n");
   printf("A part of coursework of OOP lecture, HIT Shenzhen.\n");
-  printf("\n[AD] 来哈工大深圳，体验非凡人生\n");
+  printf("\n[AD] " ANSI_BG_BLUE ANSI_FG_WHITE "来哈工大深圳" ANSI_NONE " " ANSI_BG_RED ANSI_FG_WHITE "体验非凡人生" ANSI_NONE "\n");
 }
 
 static inline void bind_signal() {

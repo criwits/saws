@@ -16,6 +16,7 @@ enum {
   DAMAGE,
   NPC_UPLOAD,
   REMOVE_AIRCRAFT,
+  PROP_ACTION,
   RECV_MSG_CNT
 };
 
@@ -65,6 +66,10 @@ struct remove_aircraft_s {
   int remove;
 };
 
+struct prop_action_s {
+  int id;
+};
+
 
 /** ENCODE **/
 
@@ -78,7 +83,10 @@ enum {
   NPC_SPAWN,
   TEAMMATE_MOVEMENT,
   SCORE,
-  PROP_SPAWN
+  PROP_SPAWN,
+  BOMB_ACTION,
+  BLOOD_ACTION,
+  BULLET_ACTION
 };
 
 struct user_query_response_s {
@@ -125,6 +133,14 @@ struct prop_spawn_s {
   int kind;
   int location_x;
   int location_y;
+};
+
+struct bomb_action_s {
+  int add_score;
+};
+
+struct bullet_action_s {
+  bool target;
 };
 
 void msg_jump();

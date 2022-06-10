@@ -275,7 +275,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           break;
         }
 
-        case MOVEMENT: if (get_game_status(pss->room)){
+        case MOVEMENT: if (get_game_status(pss->room)) {
           // 游戏双方之任何一方发来「移动」消息，
           // 都转发到另一边。
           struct movement_s *msg_struct = (struct movement_s *)msg_struct_raw;
@@ -293,7 +293,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           break;
         }
 
-        case NPC_UPLOAD: {
+        case NPC_UPLOAD: if (get_game_status(pss->room)) {
           struct npc_upload_s *msg_struct = (struct npc_upload_s *)msg_struct_raw;
           struct npc_spawn_s msg = {
               .mob = msg_struct->mob,
@@ -313,14 +313,15 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           break;
         }
 
-        case REMOVE_AIRCRAFT: {
+        case REMOVE_AIRCRAFT: if (get_game_status(pss->room)) {
           struct remove_aircraft_s *msg_struct = (struct remove_aircraft_s *) msg_struct_raw;
           remove_npc(msg_struct->remove, pss->room);
+          saws_debug_room("Removed NPC %d", pss->room->room_id, msg_struct->remove);
           free(msg_struct);
           break;
         }
 
-        case DAMAGE: {
+        case DAMAGE: if (get_game_status(pss->room)) {
           struct damage_s *msg_struct = (struct damage_s *) msg_struct_raw;
           aircraft_t *aircraft = get_npc(msg_struct->id, pss->room);
 
@@ -419,11 +420,91 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
               write_message(pss->room->host->wsi, props, PROP_SPAWN)
               write_message(pss->room->guest->wsi, props, PROP_SPAWN)
               clear_prop_spawn_s(props);
-              saws_debug_room("%d props generated", pss->room->room_id, prop_cnt);
 
               // 删除飞机
               remove_npc(msg_struct->id, pss->room);
             }
+          }
+
+          free(msg_struct);
+          break;
+        }
+
+        case PROP_ACTION: if (get_game_status(pss->room)) {
+          struct prop_action_s *msg_struct = (struct prop_action_s *) msg_struct_raw;
+          prop_t *prop = get_prop(msg_struct->id, pss->room);
+          if (prop != NULL) {
+            switch (prop->kind) {
+              case 0: {
+                // 加血道具
+                write_message(pss->wsi, NULL, BLOOD_ACTION);
+                saws_debug_room("Client %d triggered blood prop %d",
+                                pss->room->room_id, pss->client_id, msg_struct->id);
+                break;
+              }
+
+              case 1: {
+                // 炸弹道具
+                int score = remove_and_score_all_npc(pss->room);
+                if (pss->wsi == pss->room->host->wsi) {
+                  // 当前是房主
+                  struct bomb_action_s host = {
+                      .add_score = score
+                  };
+                  struct bomb_action_s guest = {
+                      .add_score = 0
+                  };
+                  write_message(pss->room->host->wsi, &host, BOMB_ACTION)
+                  write_message(pss->room->guest->wsi, &guest, BOMB_ACTION)
+                } else {
+                  // 当前是房客
+                  struct bomb_action_s host = {
+                      .add_score = 0
+                  };
+                  struct bomb_action_s guest = {
+                      .add_score = score
+                  };
+                  write_message(pss->room->host->wsi, &host, BOMB_ACTION)
+                  write_message(pss->room->guest->wsi, &guest, BOMB_ACTION)
+                }
+                saws_debug_room("Client %d triggered bomb prop %d (score: %d)",
+                                pss->room->room_id, pss->client_id, msg_struct->id, score);
+                break;
+              }
+
+              case 2: {
+                // 火力道具
+                if (pss->wsi == pss->room->host->wsi) {
+                  // 当前是房主
+                  struct bullet_action_s host = {
+                      .target = true
+                  };
+                  struct bullet_action_s guest = {
+                      .target = false
+                  };
+                  write_message(pss->room->host->wsi, &host, BULLET_ACTION)
+                  write_message(pss->room->guest->wsi, &guest, BULLET_ACTION)
+                } else {
+                  // 当前是房客
+                  struct bullet_action_s host = {
+                      .target = false
+                  };
+                  struct bullet_action_s guest = {
+                      .target = true
+                  };
+                  write_message(pss->room->host->wsi, &host, BULLET_ACTION)
+                  write_message(pss->room->guest->wsi, &guest, BULLET_ACTION)
+                }
+
+                saws_debug_room("Client %d triggered bullet prop %d",
+                                pss->room->room_id, pss->client_id, msg_struct->id);
+                break;
+              }
+              default:
+                break;
+            }
+            // 删除当前道具，因为它已经生效
+            remove_prop(msg_struct->id, pss->room);
           }
 
           free(msg_struct);
@@ -439,6 +520,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
       // free(message_buffer);
       break;
     }
+
     default:
       break;
   }
@@ -446,6 +528,9 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
   return 0;
 }
 
+/**
+ * 用于 JSON 解析出现异常时的跳转
+ */
 void msg_jump() {
   longjmp(encode_jmp_buf, -1);
 }

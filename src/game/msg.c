@@ -23,7 +23,8 @@ const char *msg_recv_type[] = {
     "movement",
     "damage",
     "npc_upload",
-    "remove_aircraft"
+    "remove_aircraft",
+    "prop_action"
 };
 
 typedef void (*msg_handler_t)(cJSON *json_node(root), void **msg_struct);
@@ -113,9 +114,17 @@ def_msg_handler(remove_aircraft) {
   s->remove = json_node(remove)->valueint;
 }
 
+def_msg_handler(prop_action) {
+  *msg_struct = malloc(sizeof(struct prop_action_s));
+  struct prop_action_s *s = (struct prop_action_s *)(*msg_struct);
+  json_parse_node(root, id)
+  s->id = json_node(id)->valueint;
+}
+
 msg_handler_t msg_handler[] = {
     user_query, room_info, create_room, join_room,
     resolution, movement, damage, npc_upload, remove_aircraft,
+    prop_action,
     NULL
 };
 
@@ -235,11 +244,28 @@ def_msg_encoder(prop_spawn) {
   cJSON_AddItemToObject(json_node(root), "props", json_node(props));
 }
 
+def_msg_encoder(bomb_action) {
+  struct bomb_action_s *s = (struct bomb_action_s *) msg_struct;
+  cJSON_AddStringToObject(json_node(root), "type", "bomb_action");
+  cJSON_AddNumberToObject(json_node(root), "add_score", s->add_score);
+}
+
+def_msg_encoder(blood_action) {
+  cJSON_AddStringToObject(json_node(root), "type", "blood_action");
+}
+
+def_msg_encoder(bullet_action) {
+  struct bullet_action_s *s = (struct bullet_action_s *) msg_struct;
+  cJSON_AddStringToObject(json_node(root), "type", "bullet_action");
+  cJSON_AddBoolToObject(json_node(root), "target", s->target);
+}
+
 msg_encoder_t msg_encoder[] = {
     user_query_response, room_info_response, create_room_response,
     join_room_response, room_ready, game_start,
     npc_spawn, teammate_movement, score,
-    prop_spawn,
+    prop_spawn, bomb_action, blood_action,
+    bullet_action,
     NULL
 };
 

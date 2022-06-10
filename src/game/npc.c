@@ -63,3 +63,46 @@ aircraft_t *get_npc(int id, room_t *room) {
   }
   return NULL;
 }
+
+int remove_and_score_all_npc(room_t *room) {
+  int score = 0;
+
+  for (aircraft_t *ptr = room->npc_list; ptr != NULL;) {
+    // 炸弹不影响 BOSS 机
+    if (ptr->mob != 2) {
+      // 加分
+      switch (ptr->mob) {
+        case 0:
+          score += 10;
+          break;
+        case 1:
+          score += 20;
+          break;
+        default:
+          break;
+      }
+
+      // 删除飞机
+      room->npc_cnt--;
+      aircraft_t *next = ptr->next;
+      if (ptr->prev == NULL && ptr->next == NULL) {
+        room->npc_list = NULL;
+      } else if (ptr->prev == NULL) {
+        ptr->next->prev = NULL;
+        room->npc_list = room->npc_list->next;
+      } else if (ptr->next == NULL) {
+        ptr->prev->next = NULL;
+      } else {
+        ptr->prev->next = ptr->next;
+        ptr->next->prev = ptr->prev;
+      }
+      free(ptr);
+      ptr = next;
+    } else {
+      ptr = ptr->next;
+    }
+  }
+
+  return score;
+}
+

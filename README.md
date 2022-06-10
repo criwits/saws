@@ -19,7 +19,7 @@ SAWS 是一个使用 CMake 构建的纯 C 语言项目。
 
 SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端，与 SAWA 以一致的通信方式通信。
 
-协议栈：WebSocket
+协议栈：WebSocket，信息载体：JSON
 
 ### 请求登入服务器
 
@@ -235,6 +235,9 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端，与 SAWA 以一
 ```
 
 ### 道具生成
+
+0 = Blood, 1 = Bomb, 2 = Bullet
+
 ```json
     {
       "type": "prop_spawn",
@@ -264,7 +267,7 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端，与 SAWA 以一
 }
 ```
 
-### 道具生效
+### 道具碰撞
 
 ```json
 {
@@ -272,6 +275,35 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端，与 SAWA 以一
   "id": 14
 }
 ```
+
+### 道具生效
+
+炸弹生效：接到此消息则清屏，然后给自己加上 `add_score` 的分数
+
+```json
+{
+  "type": "bomb_action",
+  "add_score": 1540
+}
+```
+
+加血生效：接到此消息，给自己无条件加血 `add_hp`（注意封顶）
+
+```json
+{
+  "type": "blood_action"
+}
+```
+
+子弹道具生效：接到此消息，若 `target` 为 `true`，则给自己启用效果；否则，给队友使用效果。
+
+```json
+{
+  "type": "bullet_action",
+  "target": true
+}
+```
+
 
 ## 编译运行指南
 

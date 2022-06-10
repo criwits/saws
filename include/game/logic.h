@@ -17,4 +17,8 @@ void add_npc(int id, int hp, int mob, room_t *room);
 void remove_npc(int id, room_t *room);
 aircraft_t *get_npc(int id, room_t *room);
 
+void add_prop(int id, int kind, room_t *room);
+void remove_prop(int id, room_t *room);
+prop_t *get_prop(int id, room_t *room);
+
 #endif //SAWS_LOGIC_H

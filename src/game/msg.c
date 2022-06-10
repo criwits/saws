@@ -79,8 +79,12 @@ def_msg_handler(damage) {
   struct damage_s *s = (struct damage_s *)(*msg_struct);
   json_parse_node(root, id)
   json_parse_node(root, hp_decrease)
+  json_parse_node(root, location_x)
+  json_parse_node(root, location_y)
   s->hp_decrease = json_node(hp_decrease)->valueint;
   s->id = json_node(id)->valueint;
+  s->location_x = json_node(location_x)->valueint;
+  s->location_y = json_node(location_y)->valueint;
 }
 
 def_msg_handler(npc_upload) {

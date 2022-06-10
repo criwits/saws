@@ -57,6 +57,8 @@ struct npc_upload_s {
 struct damage_s {
   int id;
   int hp_decrease;
+  int location_x;
+  int location_y;
 };
 
 struct remove_aircraft_s {

@@ -15,6 +15,7 @@
 #include <game/logic.h>
 
 #include <setjmp.h>
+#include <math.h>
 
 static int client = 0;
 static int room_id = 0;
@@ -45,6 +46,13 @@ static jmp_buf encode_jmp_buf;
     }                                        \
   } while(0);
 
+void clear_prop_spawn_s(struct prop_spawn_s *s) {
+  if (s == NULL) {
+    return;
+  }
+  clear_prop_spawn_s(s->next);
+  free(s);
+}
 
 /**
  * libwebsockets 回调函数
@@ -308,7 +316,6 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
         case REMOVE_AIRCRAFT: {
           struct remove_aircraft_s *msg_struct = (struct remove_aircraft_s *) msg_struct_raw;
           remove_npc(msg_struct->remove, pss->room);
-          saws_debug_room("Client %d removed aircraft with id %d", pss->room->room_id, pss->client_id, msg_struct->remove);
           free(msg_struct);
           break;
         }
@@ -365,8 +372,54 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
                 write_message(pss->room->guest->wsi, &guest, SCORE)
               }
               // 发放道具
-              // TODO
+              srand(time(0));
+              int prop_cnt = 0;
+              switch (aircraft->mob) {
+                case 0:
+                  prop_cnt = 0;
+                  break;
+                case 1:
+                  prop_cnt = 1;
+                  break;
+                case 2:
+                  prop_cnt = 3;
+                  break;
+                default:
+                  break;
+              }
+              struct prop_spawn_s *props = NULL;
+              for (int i = 0; i < prop_cnt; i++) {
+                int factor = rand() % 10; // [0, 9]
+                if (0 <= factor && factor < 6) {
+                  int kind;
+                  if (0 <= factor && factor < 2) {
+                    // Blood
+                    kind = 0;
+                  } else if (2 <= factor && factor < 4) {
+                    // Bomb
+                    kind = 1;
+                  } else if (4 <= factor && factor < 6) {
+                    // Bullet
+                    kind = 2;
+                  }
+                  struct prop_spawn_s *prop = (struct prop_spawn_s *) malloc(sizeof(struct prop_spawn_s));
+                  prop->next = props;
+                  prop->id = pss->room->prop_id;
+                  prop->location_x = msg_struct->location_x + rand() % 20 - 10;
+                  prop->location_y = msg_struct->location_y + rand() % 20 - 10;
+                  prop->kind = kind;
+                  props = prop;
 
+                  add_prop(prop->id, prop->kind, pss->room);
+                  saws_debug_room("Generated prop id %d (kind: %d) at (%d, %d)", pss->room->room_id,
+                                  prop->id, prop->kind, prop->location_x, prop->location_y);
+                  pss->room->prop_id++;
+                }
+              }
+              write_message(pss->room->host->wsi, props, PROP_SPAWN)
+              write_message(pss->room->guest->wsi, props, PROP_SPAWN)
+              clear_prop_spawn_s(props);
+              saws_debug_room("%d props generated", pss->room->room_id, prop_cnt);
 
               // 删除飞机
               remove_npc(msg_struct->id, pss->room);
@@ -396,3 +449,4 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
 void msg_jump() {
   longjmp(encode_jmp_buf, -1);
 }
+

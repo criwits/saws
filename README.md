@@ -205,7 +205,9 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端，与 SAWA 以一
 {
   "type": "damage",
   "id": 14,
-  "hp_decrease": 10
+  "hp_decrease": 10,
+  "location_x": 514,
+  "location_y": 114
 }
 ```
 
@@ -251,6 +253,24 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端，与 SAWA 以一
         }
       ]
     }
+```
+
+### 道具无条件移除
+
+```json
+{
+  "type": "remove_prop",
+  "remove": 14
+}
+```
+
+### 道具生效
+
+```json
+{
+  "type": "prop_action",
+  "id": 14
+}
 ```
 
 ## 编译运行指南

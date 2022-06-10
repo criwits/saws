@@ -8,7 +8,11 @@
 #define SAWS_LOGIC_H
 
 void set_difficulty(room_t *room, int difficulty);
+
 void start_game(room_t *room);
+void stop_game(room_t *room);
+bool get_game_status(room_t *room);
+
 void add_npc(int id, int hp, int mob, room_t *room);
 void remove_npc(int id, room_t *room);
 aircraft_t *get_npc(int id, room_t *room);

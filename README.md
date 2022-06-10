@@ -232,6 +232,27 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端，与 SAWA 以一
 }
 ```
 
+### 道具生成
+```json
+    {
+      "type": "prop_spawn",
+      "props": [
+        {
+          "id": 1,
+          "kind": 0,
+          "location_x": 514,
+          "location_y": 114
+        },
+        {
+          "id": 2,
+          "kind": 0,
+          "location_x": 143,
+          "location_y": 241
+        }
+      ]
+    }
+```
+
 ## 编译运行指南
 
 本项目目前只能运行在 Linux 平台上。使用 CMake 构建运行。

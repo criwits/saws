@@ -8,6 +8,7 @@
 #define SAWS_LOGGER_H
 
 #include <stdio.h>
+#include <time.h>
 
 #define SAWS_DEBUG_ENABLED
 
@@ -55,9 +56,21 @@
 
 #ifdef SAWS_DEBUG_ENABLED
 #define saws_debug(format, ...) \
-  saws_formatted_log(ANSI_FG_CYAN, format, ## __VA_ARGS__)
+  do { \
+    time_t rawtime; \
+    struct tm *ptminfo; \
+    time(&rawtime); \
+    ptminfo = localtime(&rawtime); \
+    printf(ANSI_FG_MAGENTA "[%02d-%02d-%02d %02d:%02d:%02d] " ANSI_FG_CYAN format ANSI_NONE "\n", \
+      ptminfo->tm_year + 1900, ptminfo->tm_mon + 1, ptminfo->tm_mday, ptminfo->tm_hour, ptminfo->tm_min, ptminfo->tm_sec, ## __VA_ARGS__); \
+  } while(0) \
+
+#define saws_debug_room(format, room_id, ...) \
+  saws_debug(ANSI_FG_GREEN "\b[Room %d] " ANSI_FG_CYAN format, room_id, ## __VA_ARGS__)
+
 #else
 #define saws_debug(format, ...)
+#define saws_debug_room(room_id, format, ...)
 #endif
 
 #endif //SAWS_LOGGER_H

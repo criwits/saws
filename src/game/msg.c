@@ -141,7 +141,7 @@ int decode_msg(const char *msg, void **msg_struct) {
 
 /** ENCODE **/
 
-typedef void (*msg_decoder_t)(cJSON *json_node(root), const void *msg_struct);
+typedef void (*msg_encoder_t)(cJSON *json_node(root), const void *msg_struct);
 #define def_msg_encoder(pattern) static inline void pattern(cJSON *json_node(root), const void *msg_struct)
 
 def_msg_encoder(user_query_response) {
@@ -216,23 +216,33 @@ def_msg_encoder(score) {
   cJSON_AddNumberToObject(json_node(root), "score", s->score);
 }
 
-msg_decoder_t msg_decoder[] = {
-    user_query_response,
-    room_info_response,
-    create_room_response,
-    join_room_response,
-    room_ready,
-    game_start,
-    npc_spawn,
-    teammate_movement,
-    score,
+def_msg_encoder(prop_spawn) {
+  struct prop_spawn_s *s = (struct prop_spawn_s *)msg_struct;
+  cJSON_AddStringToObject(json_node(root), "type", "prop_spawn");
+  cJSON *json_node(props) = cJSON_CreateArray();
+  for (struct prop_spawn_s *ptr = s; ptr != NULL; ptr = ptr->next) {
+    cJSON *json_node(prop_item) = cJSON_CreateObject();
+    cJSON_AddNumberToObject(json_node(prop_item), "id", ptr->id);
+    cJSON_AddNumberToObject(json_node(prop_item), "kind", ptr->kind);
+    cJSON_AddNumberToObject(json_node(prop_item), "location_x", ptr->location_x);
+    cJSON_AddNumberToObject(json_node(prop_item), "location_y", ptr->location_y);
+    cJSON_AddItemToArray(json_node(props), json_node(prop_item));
+  }
+  cJSON_AddItemToObject(json_node(root), "props", json_node(props));
+}
+
+msg_encoder_t msg_encoder[] = {
+    user_query_response, room_info_response, create_room_response,
+    join_room_response, room_ready, game_start,
+    npc_spawn, teammate_movement, score,
+    prop_spawn,
     NULL
 };
 
 char *encode_msg(const void *msg_struct, int type) {
   cJSON *json_node(root) = cJSON_CreateObject();
-  msg_decoder[type](json_node(root), msg_struct);
-  char *ret =  cJSON_Print(json_node(root));
+  msg_encoder[type](json_node(root), msg_struct);
+  char *ret = cJSON_Print(json_node(root));
   cJSON_Delete(json_node(root));
   return ret;
 }

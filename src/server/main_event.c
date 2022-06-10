@@ -102,7 +102,6 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
 
     case LWS_CALLBACK_SERVER_WRITEABLE: {
       // 给当前回调的客户端发送消息
-      ///
       if (vhd->msg_query != NULL && vhd->msg_query->next == vhd->msg_query) {
         saws_warn("Loop detected, emergency clear buffer");
         free(vhd->msg_query);
@@ -268,7 +267,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           break;
         }
 
-        case MOVEMENT: {
+        case MOVEMENT: if (get_game_status(pss->room)){
           // 游戏双方之任何一方发来「移动」消息，
           // 都转发到另一边。
           struct movement_s *msg_struct = (struct movement_s *)msg_struct_raw;
@@ -299,7 +298,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           };
 
           add_npc(msg.id, msg.hp, msg.mob, pss->room);
-          saws_debug("\b[Room %d] Spawned NPC with id %d", pss->room->room_id, msg.id);
+          saws_debug_room("Spawned NPC with id %d", pss->room->room_id, msg.id);
 
           write_message(pss->room->guest->wsi, &msg, NPC_SPAWN)
           free(msg_struct);
@@ -309,7 +308,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
         case REMOVE_AIRCRAFT: {
           struct remove_aircraft_s *msg_struct = (struct remove_aircraft_s *) msg_struct_raw;
           remove_npc(msg_struct->remove, pss->room);
-          saws_debug("\b[Room %d] Client %d removed aircraft with id %d", pss->room->room_id, pss->client_id, msg_struct->remove);
+          saws_debug_room("Client %d removed aircraft with id %d", pss->room->room_id, pss->client_id, msg_struct->remove);
           free(msg_struct);
           break;
         }
@@ -321,10 +320,25 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           if (aircraft != NULL) {
             // 扣血
             aircraft->hp -= (msg_struct->hp_decrease);
+
             if (aircraft->hp <= 0) {
               // 加分
-              int score = aircraft->mob ? 20 : 10;
-              saws_debug("\b[Room %d] Client %d kills NPC with id %d and get score %d", pss->room->room_id, pss->client_id, aircraft->id, score);
+              int score;
+              switch (aircraft->mob) {
+                case 0:
+                  score = 10;
+                  break;
+                case 1:
+                  score = 20;
+                  break;
+                case 2:
+                  score = 50;
+                  break;
+                default:
+                  score = 0;
+                  break;
+              }
+              saws_debug_room("Client %d kills NPC with id %d and get score %d", pss->room->room_id, pss->client_id, aircraft->id, score);
               if (pss->wsi == pss->room->host->wsi) {
                 // 当前是房主
                 struct score_s host = {
@@ -350,6 +364,10 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
                 write_message(pss->room->host->wsi, &host, SCORE)
                 write_message(pss->room->guest->wsi, &guest, SCORE)
               }
+              // 发放道具
+              // TODO
+
+
               // 删除飞机
               remove_npc(msg_struct->id, pss->room);
             }
@@ -368,7 +386,6 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
       // free(message_buffer);
       break;
     }
-
     default:
       break;
   }

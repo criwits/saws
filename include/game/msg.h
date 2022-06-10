@@ -75,7 +75,8 @@ enum {
   GAME_START,
   NPC_SPAWN,
   TEAMMATE_MOVEMENT,
-  SCORE
+  SCORE,
+  PROP_SPAWN
 };
 
 struct user_query_response_s {
@@ -114,6 +115,14 @@ struct teammate_movement_s {
 struct score_s {
   int remove;
   int score;
+};
+
+struct prop_spawn_s {
+  struct prop_spawn_s *next;
+  int id;
+  int kind;
+  int location_x;
+  int location_y;
 };
 
 void msg_jump();

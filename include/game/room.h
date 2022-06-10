@@ -6,6 +6,7 @@
 
 #include <network/protocol.h>
 #include "aircraft.h"
+#include "prop.h"
 
 typedef struct room_s {
   struct room_s *next;
@@ -38,6 +39,9 @@ typedef struct room_s {
 
   int npc_cnt;
   aircraft_t *npc_list;
+  int prop_id;
+  int prop_cnt;
+  prop_t *prop_list;
 } room_t;
 
 room_t *add_room(int room_id, struct per_session_data_saws *host, struct per_session_data_saws *guest,

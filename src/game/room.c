@@ -36,6 +36,10 @@ room_t *add_room(int room_id, struct per_session_data_saws *host, struct per_ses
   room->npc_cnt = 0;
   room->npc_list = NULL;
 
+  room->prop_id = 0;
+  room->prop_cnt = 0;
+  room->prop_list = NULL;
+
   room_cnt++;
   return room;
 }
@@ -49,6 +53,7 @@ room_t *get_room_by_id(int room_id) {
   return NULL;
 }
 
+/** DON'T USE ***/
 void remove_room_by_id(int room_id) {
   if (room->room_id == room_id) {
     room_t *tmp = room;

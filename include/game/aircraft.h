@@ -1,5 +1,5 @@
 /**
- * @file entities.h
+ * @file aircraft.h
  * @brief 飞机
  */
 #ifndef SAWS_AIRCRAFT_H

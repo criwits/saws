@@ -13,7 +13,4 @@ set(HEADER_DIRECTORIES
 include_directories(${HEADER_DIRECTORIES})
 add_executable(saws ${SOURCE_FILES})
 
-set(CMAKE_BUILD_TYPE DEBUG)
-set(LWS_WITH_ASAN 1)
-
 target_link_libraries(saws websockets mariadb)

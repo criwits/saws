@@ -32,11 +32,6 @@
 #define ANSI_BG_WHITE   "\33[1;47m"
 #define ANSI_NONE       "\33[0m"
 
-/**
- * 此宏用来打印指定颜色的一整行内容。
- * 语法大致同 printf。
- * @example saws_formatted_log(ANSI_FG_BLUE, "Hi, my name is %s", "Hans"); 可以打印一行蓝色的“Hi, my name is Hans”。
- */
 #define saws_formatted_log(colour, format, ...) \
   printf(colour "[%s:%d %s] " format ANSI_NONE "\n", \
   __FILE__, __LINE__, __func__, ## __VA_ARGS__)

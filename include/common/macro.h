@@ -14,4 +14,11 @@
 
 #define arrlen(x) (sizeof(x) / sizeof(x[0]))
 
+#define likely(x)  __builtin_expect(!!(x), 1)
+#define unlikely(x)  __builtin_expect(!!(x), 0)
+
+// already defined in param.h
+// #define MAX(a, b) ((a > b) ? a : b)
+// #define MIN(a, b) ((a < b) ? a : b)
+
 #endif //SAWS_MACRO_H

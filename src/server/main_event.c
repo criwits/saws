@@ -6,20 +6,25 @@
  */
 
 #include <common.h>
-#include <libwebsockets.h>
-#include <game/msg.h>
-#include <database/user.h>
 
+#include <database/user.h>
 #include <network/protocol.h>
-#include <game/room.h>
+#include <game/msg.h>
 #include <game/logic.h>
 
+#include <libwebsockets.h>
 #include <setjmp.h>
-#include <math.h>
 
 static int client = 0;
 static int room_id = 0;
+
+/**
+ * 用于 JSON 解析出现异常时的跳转
+ */
 static jmp_buf encode_jmp_buf;
+void msg_jump() {
+  longjmp(encode_jmp_buf, -1);
+}
 
 #define write_message(wsi_s, msg_s, type) \
   do {                                        \
@@ -53,6 +58,9 @@ void clear_prop_spawn_s(struct prop_spawn_s *s) {
   clear_prop_spawn_s(s->next);
   free(s);
 }
+
+#define WHEN_ROOM_AVAILABLE \
+  if (unlikely(!get_game_status(pss->room))) { break; } else
 
 /**
  * libwebsockets 回调函数
@@ -92,7 +100,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
       // 连接已产生
       // 将当前的客户端加入客户端列表
       saws_log("A client connection established with id %d", client);
-      lws_ll_fwd_insert(pss, pss_list, vhd->pss_list);
+      lws_ll_fwd_insert(pss, pss_list, vhd->pss_list)
       pss->wsi = wsi;
       pss->client_id = client++;
       pss->uid = -1;
@@ -102,11 +110,14 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
     case LWS_CALLBACK_CLOSED: {
       // 连接已断开
       // 删除当前客户端
+      // FIXME
       saws_log("Client %d lost its connection", pss->client_id);
       lws_ll_fwd_remove(struct per_session_data_saws, pss_list,
-                        pss, vhd->pss_list);
+                        pss, vhd->pss_list)
       if (pss->room != NULL) {
         stop_game(pss->room);
+        pss->room->host->room = NULL;
+        pss->room->guest->room = NULL;
       }
       break;
     }
@@ -229,10 +240,10 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
               room->guest = pss;
               room->guest_uid = pss->uid;
               pss->room = room;
-              write_message(room->host->wsi, NULL, ROOM_READY);
+              write_message(room->host->wsi, NULL, ROOM_READY)
             }
           }
-          write_message(pss->wsi, &msg, JOIN_ROOM_RESPONSE);
+          write_message(pss->wsi, &msg, JOIN_ROOM_RESPONSE)
 
           free(msg_struct);
           break;
@@ -256,7 +267,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
             // 此时，双方都已经上报屏幕信息
             double host_ratio = pss->room->host_height / (double) pss->room->host_width;
             double guest_ratio = pss->room->guest_height / (double) pss->room->guest_width;
-            real_ratio = host_ratio > guest_ratio ? guest_ratio : host_ratio;
+            real_ratio = MIN(host_ratio, guest_ratio);
 
             // 开始游戏
             struct game_start_s msg = {
@@ -273,7 +284,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           break;
         }
 
-        case MOVEMENT: if (get_game_status(pss->room)) {
+        case MOVEMENT: WHEN_ROOM_AVAILABLE {
           // 游戏双方之任何一方发来「移动」消息，
           // 都转发到另一边。
           struct movement_s *msg_struct = (struct movement_s *)msg_struct_raw;
@@ -291,7 +302,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           break;
         }
 
-        case NPC_UPLOAD: if (get_game_status(pss->room)) {
+        case NPC_UPLOAD: WHEN_ROOM_AVAILABLE {
           struct npc_upload_s *msg_struct = (struct npc_upload_s *)msg_struct_raw;
           struct npc_spawn_s msg = {
               .mob = msg_struct->mob,
@@ -311,7 +322,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           break;
         }
 
-        case REMOVE_AIRCRAFT: if (get_game_status(pss->room)) {
+        case REMOVE_AIRCRAFT: WHEN_ROOM_AVAILABLE {
           struct remove_aircraft_s *msg_struct = (struct remove_aircraft_s *) msg_struct_raw;
           remove_npc(msg_struct->remove, pss->room);
           saws_debug_room("Removed NPC %d", pss->room->room_id, msg_struct->remove);
@@ -319,7 +330,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           break;
         }
 
-        case DAMAGE: if (get_game_status(pss->room)) {
+        case DAMAGE: WHEN_ROOM_AVAILABLE {
           struct damage_s *msg_struct = (struct damage_s *) msg_struct_raw;
           aircraft_t *aircraft = get_npc(msg_struct->id, pss->room);
 
@@ -392,7 +403,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
               for (int i = 0; i < prop_cnt; i++) {
                 int factor = rand() % 10; // [0, 9]
                 if (0 <= factor && factor < 6) {
-                  int kind;
+                  int kind = 0;
                   if (0 <= factor && factor < 2) {
                     // Blood
                     kind = 0;
@@ -431,14 +442,14 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           break;
         }
 
-        case PROP_ACTION: if (get_game_status(pss->room)) {
+        case PROP_ACTION: WHEN_ROOM_AVAILABLE {
           struct prop_action_s *msg_struct = (struct prop_action_s *) msg_struct_raw;
           prop_t *prop = get_prop(msg_struct->id, pss->room);
           if (prop != NULL) {
             switch (prop->kind) {
               case 0: {
                 // 加血道具
-                write_message(pss->wsi, NULL, BLOOD_ACTION);
+                write_message(pss->wsi, NULL, BLOOD_ACTION)
                 saws_debug_room("Client %d triggered blood prop %d",
                                 pss->room->room_id, pss->client_id, msg_struct->id);
                 break;
@@ -515,7 +526,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           break;
         }
 
-        case GAME_END_REQUEST: if (get_game_status(pss->room)) {
+        case GAME_END_REQUEST: WHEN_ROOM_AVAILABLE {
           struct game_end_request_s *msg_struct = (struct game_end_request_s *) msg_struct_raw;
           // 游戏结束
           saws_debug_room("Client %d request end game for reason %d",
@@ -556,10 +567,4 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
   return 0;
 }
 
-/**
- * 用于 JSON 解析出现异常时的跳转
- */
-void msg_jump() {
-  longjmp(encode_jmp_buf, -1);
-}
 

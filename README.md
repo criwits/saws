@@ -302,6 +302,32 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端，与 SAWA 以一
 }
 ```
 
+### 本方死亡、按下返回键，通知服务器结束本局游戏
+
+任一一方发送此消息，服务器将结束本局游戏。
+
+`reason` 字段：0 = 因发信方死亡结束；1 = 因发信方按返回键结束。
+
+```json
+{
+  "type": "game_end_request",
+  "reason": 1
+}
+```
+
+### 服务器通知双方结束游戏
+
+`this_score` 为本方分数，`teammate_score` 为对方分数。`reason` 是结束游戏的原因。
+
+```json
+{
+  "type": "game_end",
+  "reason": 1,
+  "this_score": 1700,
+  "teammate_score": 1870
+}
+```
+
 
 ## 编译运行指南
 

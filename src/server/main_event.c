@@ -105,6 +105,9 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
       saws_log("Client %d lost its connection", pss->client_id);
       lws_ll_fwd_remove(struct per_session_data_saws, pss_list,
                         pss, vhd->pss_list);
+      if (pss->room != NULL) {
+        stop_game(pss->room);
+      }
       break;
     }
 
@@ -344,6 +347,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
               saws_debug_room("Client %d kills NPC with id %d and get score %d", pss->room->room_id, pss->client_id, aircraft->id, score);
               if (pss->wsi == pss->room->host->wsi) {
                 // 当前是房主
+                pss->room->host_score += score;
                 struct score_s host = {
                     .remove = msg_struct->id,
                     .score = score
@@ -356,6 +360,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
                 write_message(pss->room->guest->wsi, &guest, SCORE)
               } else {
                 // 当前是房客
+                pss->room->guest_score += score;
                 struct score_s host = {
                     .remove = msg_struct->id,
                     .score = 0
@@ -417,7 +422,8 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
               clear_prop_spawn_s(props);
 
               // 删除飞机
-              remove_npc(msg_struct->id, pss->room);
+              // remove_npc(msg_struct->id, pss->room);
+              remove_given_npc(aircraft, pss->room);
             }
           }
 
@@ -440,9 +446,10 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
 
               case 1: {
                 // 炸弹道具
-                int score = remove_and_score_all_npc(pss->room);
+                int score = remove_and_score_all_npcs(pss->room);
                 if (pss->wsi == pss->room->host->wsi) {
                   // 当前是房主
+                  pss->room->host_score += score;
                   struct bomb_action_s host = {
                       .add_score = score
                   };
@@ -453,6 +460,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
                   write_message(pss->room->guest->wsi, &guest, BOMB_ACTION)
                 } else {
                   // 当前是房客
+                  pss->room->guest_score += score;
                   struct bomb_action_s host = {
                       .add_score = 0
                   };
@@ -499,9 +507,34 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
                 break;
             }
             // 删除当前道具，因为它已经生效
-            remove_prop(msg_struct->id, pss->room);
+            // remove_prop(msg_struct->id, pss->room);
+            remove_given_prop(prop, pss->room);
           }
 
+          free(msg_struct);
+          break;
+        }
+
+        case GAME_END_REQUEST: if (get_game_status(pss->room)) {
+          struct game_end_request_s *msg_struct = (struct game_end_request_s *) msg_struct_raw;
+          // 游戏结束
+          saws_debug_room("Client %d request end game for reason %d",
+                          pss->room->room_id, pss->client_id, msg_struct->reason);
+          // 通知双方
+          struct game_end_s host = {
+              .reason = msg_struct->reason,
+              .this_score = pss->room->host_score,
+              .teammate_score = pss->room->guest_score
+          };
+          struct game_end_s guest = {
+              .reason = msg_struct->reason,
+              .this_score = pss->room->guest_score,
+              .teammate_score = pss->room->host_score
+          };
+          write_message(pss->room->host->wsi, &host, GAME_END)
+          write_message(pss->room->guest->wsi, &guest, GAME_END)
+          // 关闭房间
+          stop_game(pss->room);
           free(msg_struct);
           break;
         }

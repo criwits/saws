@@ -7,7 +7,7 @@
 
 #include <common.h>
 
-#include <game/room.h>
+#include <game/logic.h>
 #include <network/protocol.h>
 
 static room_t *room = NULL;
@@ -16,7 +16,11 @@ static int room_cnt = 0;
 room_t *add_room(int room_id, struct per_session_data_saws *host, struct per_session_data_saws *guest,
     struct per_vhost_data_saws *vhost) {
   room_t *new_room = (room_t *) malloc(sizeof(room_t));
+  new_room->prev = NULL;
   new_room->next = room;
+  if (room != NULL) {
+    room->prev = new_room;
+  }
   room = new_room;
 
   room->room_id = room_id;
@@ -40,6 +44,9 @@ room_t *add_room(int room_id, struct per_session_data_saws *host, struct per_ses
   room->prop_cnt = 0;
   room->prop_list = NULL;
 
+  room->host_score = 0;
+  room->guest_score = 0;
+
   room_cnt++;
   return room;
 }
@@ -53,22 +60,28 @@ room_t *get_room_by_id(int room_id) {
   return NULL;
 }
 
-/** DON'T USE ***/
-void remove_room_by_id(int room_id) {
-  if (room->room_id == room_id) {
-    room_t *tmp = room;
+void remove_given_room(room_t *ptr) {
+  room_cnt--;
+  if (ptr->prev == NULL && ptr->next == NULL) {
+    room = NULL;
+  } else if (ptr->prev == NULL) {
+    ptr->next->prev = NULL;
     room = room->next;
-    free(tmp);
-    room_cnt--;
+  } else if (ptr->next == NULL) {
+    ptr->prev->next = NULL;
   } else {
-    for (room_t *ptr = room; ptr != NULL && ptr->next != NULL; ptr = ptr->next) {
-      if (ptr->next->room_id == room_id) {
-        room_t *new_next = ptr->next->next;
-        free(ptr->next);
-        room_cnt--;
-        ptr->next = new_next;
-      }
-    }
+    ptr->prev->next = ptr->next;
+    ptr->next->prev = ptr->prev;
+  }
+  remove_all_npcs(ptr);
+  remove_all_props(ptr);
+  free(ptr);
+}
+
+void remove_room(int room_id) {
+  room_t *target = get_room_by_id(room_id);
+  if (target != NULL) {
+    remove_given_room(target);
   }
 }
 

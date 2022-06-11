@@ -17,6 +17,7 @@ enum {
   NPC_UPLOAD,
   REMOVE_AIRCRAFT,
   PROP_ACTION,
+  GAME_END_REQUEST,
   RECV_MSG_CNT
 };
 
@@ -70,6 +71,10 @@ struct prop_action_s {
   int id;
 };
 
+struct game_end_request_s {
+  int reason;
+};
+
 
 /** ENCODE **/
 
@@ -86,7 +91,8 @@ enum {
   PROP_SPAWN,
   BOMB_ACTION,
   BLOOD_ACTION,
-  BULLET_ACTION
+  BULLET_ACTION,
+  GAME_END
 };
 
 struct user_query_response_s {
@@ -141,6 +147,12 @@ struct bomb_action_s {
 
 struct bullet_action_s {
   bool target;
+};
+
+struct game_end_s {
+  int reason;
+  int this_score;
+  int teammate_score;
 };
 
 void msg_jump();

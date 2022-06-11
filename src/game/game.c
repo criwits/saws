@@ -16,6 +16,7 @@ void start_game(room_t *room) {
 void stop_game(room_t *room) {
   saws_debug("Room %d stops", room->room_id);
   room->running = false;
+  remove_given_room(room);
 }
 
 bool get_game_status(room_t *room) {

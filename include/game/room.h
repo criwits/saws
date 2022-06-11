@@ -9,6 +9,7 @@
 #include "prop.h"
 
 typedef struct room_s {
+  struct room_s *prev;
   struct room_s *next;
   int room_id;
   bool running;
@@ -29,15 +30,20 @@ typedef struct room_s {
 
   int npc_cnt;
   aircraft_t *npc_list;
+
   int prop_id;
   int prop_cnt;
   prop_t *prop_list;
+
+  int host_score;
+  int guest_score;
 } room_t;
 
 room_t *add_room(int room_id, struct per_session_data_saws *host, struct per_session_data_saws *guest,
                  struct per_vhost_data_saws *vhost);
 room_t *get_room_by_id(int room_id);
-void remove_room_by_id(int room_id);
+void remove_given_room(room_t *ptr);
+void remove_room(int room_id);
 room_t *get_room();
 int get_room_cnt();
 

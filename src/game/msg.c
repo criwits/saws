@@ -10,8 +10,6 @@
 #include <utils/json_macro.h>
 #include <game/room.h>
 
-#include <setjmp.h>
-
 /** DECODE **/
 
 const char *msg_recv_type[] = {
@@ -24,7 +22,8 @@ const char *msg_recv_type[] = {
     "damage",
     "npc_upload",
     "remove_aircraft",
-    "prop_action"
+    "prop_action",
+    "game_end_request"
 };
 
 typedef void (*msg_handler_t)(cJSON *json_node(root), void **msg_struct);
@@ -121,10 +120,17 @@ def_msg_handler(prop_action) {
   s->id = json_node(id)->valueint;
 }
 
+def_msg_handler(game_end_request) {
+  *msg_struct = malloc(sizeof(struct game_end_request_s));
+  struct game_end_request_s *s = (struct game_end_request_s *)(*msg_struct);
+  json_parse_node(root, reason)
+  s->reason = json_node(reason)->valueint;
+}
+
 msg_handler_t msg_handler[] = {
     user_query, room_info, create_room, join_room,
     resolution, movement, damage, npc_upload, remove_aircraft,
-    prop_action,
+    prop_action, game_end_request,
     NULL
 };
 
@@ -260,12 +266,20 @@ def_msg_encoder(bullet_action) {
   cJSON_AddBoolToObject(json_node(root), "target", s->target);
 }
 
+def_msg_encoder(game_end) {
+  struct game_end_s *s = (struct game_end_s *) msg_struct;
+  cJSON_AddStringToObject(json_node(root), "type", "game_end");
+  cJSON_AddNumberToObject(json_node(root), "reason", s->reason);
+  cJSON_AddNumberToObject(json_node(root), "this_score", s->this_score);
+  cJSON_AddNumberToObject(json_node(root), "teammate_score", s->teammate_score);
+}
+
 msg_encoder_t msg_encoder[] = {
     user_query_response, room_info_response, create_room_response,
     join_room_response, room_ready, game_start,
     npc_spawn, teammate_movement, score,
     prop_spawn, bomb_action, blood_action,
-    bullet_action,
+    bullet_action, game_end,
     NULL
 };
 

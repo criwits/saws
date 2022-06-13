@@ -18,6 +18,7 @@ enum {
   REMOVE_AIRCRAFT,
   PROP_ACTION,
   GAME_END_REQUEST,
+  GET_RANKINGS,
   RECV_MSG_CNT
 };
 
@@ -92,7 +93,8 @@ enum {
   BOMB_ACTION,
   BLOOD_ACTION,
   BULLET_ACTION,
-  GAME_END
+  GAME_END,
+  RANKINGS
 };
 
 struct user_query_response_s {

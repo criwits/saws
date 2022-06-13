@@ -23,7 +23,8 @@ const char *msg_recv_type[] = {
     "npc_upload",
     "remove_aircraft",
     "prop_action",
-    "game_end_request"
+    "game_end_request",
+    "get_rankings"
 };
 
 typedef void (*msg_handler_t)(cJSON *json_node(root), void **msg_struct);
@@ -127,10 +128,14 @@ def_msg_handler(game_end_request) {
   s->reason = json_node(reason)->valueint;
 }
 
+def_msg_handler(get_rankings) {
+  // 空的
+}
+
 msg_handler_t msg_handler[] = {
     user_query, room_info, create_room, join_room,
     resolution, movement, damage, npc_upload, remove_aircraft,
-    prop_action, game_end_request,
+    prop_action, game_end_request, get_rankings,
     NULL
 };
 
@@ -274,12 +279,34 @@ def_msg_encoder(game_end) {
   cJSON_AddNumberToObject(json_node(root), "teammate_score", s->teammate_score);
 }
 
+#include <database/api.h>
+
+def_msg_encoder(rankings) {
+  cJSON_AddStringToObject(json_node(root), "type", "rankings");
+  cJSON *json_node(arr) = cJSON_CreateArray();
+
+  MYSQL_RES *res = get_ranking_json();
+  MYSQL_ROW row;
+
+  while ((row = mysql_fetch_row(res))) {
+    cJSON *json_node(arr_item) = cJSON_CreateObject();
+    cJSON_AddStringToObject(json_node(arr_item), "username", row[0]);
+    cJSON_AddNumberToObject(json_node(arr_item), "score", atoi(row[1]));
+    cJSON_AddNumberToObject(json_node(arr_item), "enroll_date", atoi(row[2]));
+
+    cJSON_AddItemToArray(json_node(arr), json_node(arr_item));
+  }
+
+  cJSON_AddItemToObject(json_node(root), "rankings", json_node(arr));
+  mysql_free_result(res);
+}
+
 msg_encoder_t msg_encoder[] = {
     user_query_response, room_info_response, create_room_response,
     join_room_response, room_ready, game_start,
     npc_spawn, teammate_movement, score,
     prop_spawn, bomb_action, blood_action,
-    bullet_action, game_end,
+    bullet_action, game_end, rankings,
     NULL
 };
 

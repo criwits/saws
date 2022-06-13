@@ -7,7 +7,7 @@
 
 #include <common.h>
 
-#include <database/user.h>
+#include <database/api.h>
 #include <network/protocol.h>
 #include <game/msg.h>
 #include <game/logic.h>
@@ -118,6 +118,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
         stop_game(pss->room);
         pss->room->host->room = NULL;
         pss->room->guest->room = NULL;
+        pss->room = NULL;
       }
       break;
     }
@@ -523,6 +524,11 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
           }
 
           free(msg_struct);
+          break;
+        }
+
+        case GET_RANKINGS: {
+          write_message(pss->wsi, NULL, RANKINGS)
           break;
         }
 

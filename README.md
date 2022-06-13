@@ -328,6 +328,32 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端，与 SAWA 以一
 }
 ```
 
+### 请求排行
+
+```json
+{
+  "type": "get_rankings"
+}
+```
+
+返回示例（默认按分数降序）
+
+```json
+{ 
+  "type": "rankings",
+  "rankings": [
+    { "username": "hans",
+      "score": 842,
+      "enroll_date": 0
+    }, {
+      "username": "black", 
+      "score": 710,
+      "enroll_date": 0
+    }
+  ]
+}
+```
+
 
 ## 编译运行指南
 

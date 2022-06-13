@@ -73,8 +73,6 @@ void remove_given_room(room_t *ptr) {
     ptr->prev->next = ptr->next;
     ptr->next->prev = ptr->prev;
   }
-  remove_all_npcs(ptr);
-  remove_all_props(ptr);
   free(ptr);
 }
 

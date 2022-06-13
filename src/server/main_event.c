@@ -114,7 +114,7 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
       saws_log("Client %d lost its connection", pss->client_id);
       lws_ll_fwd_remove(struct per_session_data_saws, pss_list,
                         pss, vhd->pss_list)
-      if (pss->room != NULL) {
+      if (get_game_status(pss->room)) {
         stop_game(pss->room);
         pss->room->host->room = NULL;
         pss->room->guest->room = NULL;

@@ -548,6 +548,10 @@ int callback_event(struct lws *wsi, enum lws_callback_reasons reason,
               .this_score = pss->room->guest_score,
               .teammate_score = pss->room->host_score
           };
+          time_t rawtime;
+          time(&rawtime);
+          insert_ranking(pss->room->host->uid, pss->room->host_score, (int) rawtime, pss->room->difficulty);
+          insert_ranking(pss->room->guest->uid, pss->room->guest_score, (int) rawtime, pss->room->difficulty);
           write_message(pss->room->host->wsi, &host, GAME_END)
           write_message(pss->room->guest->wsi, &guest, GAME_END)
           // 关闭房间

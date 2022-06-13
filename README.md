@@ -344,11 +344,13 @@ SAWS 是 [SAWA](https://git.hit.edu.cn/criwits/sawa) 的后端，与 SAWA 以一
   "rankings": [
     { "username": "hans",
       "score": 842,
-      "enroll_date": 0
+      "enroll_date": 0,
+      "difficulty": 0
     }, {
       "username": "black", 
       "score": 710,
-      "enroll_date": 0
+      "enroll_date": 0,
+      "difficulty": 2
     }
   ]
 }

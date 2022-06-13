@@ -9,12 +9,12 @@
 #include <database/mysql.h>
 
 #define MAX_QUERY_PATTERN_LENGTH 256
-#define INSERT_RANKING_PATTERN "INSERT INTO rankings(uid, score, enroll_date) VALUES (%d, %d, %d)"
-#define GET_RANKING_PATTERN "SELECT u.username, r.score, r.enroll_date FROM users u, rankings r WHERE u.uid = r.uid ORDER BY score DESC"
+#define INSERT_RANKING_PATTERN "INSERT INTO rankings(uid, score, enroll_date, difficulty) VALUES (%d, %d, %d, %d)"
+#define GET_RANKING_PATTERN "SELECT u.username, r.score, r.enroll_date, r.difficulty FROM users u, rankings r WHERE u.uid = r.uid ORDER BY score DESC"
 
-void insert_ranking(int uid, int score, int enroll_date) {
+void insert_ranking(int uid, int score, int enroll_date, int difficulty) {
   char buf[MAX_QUERY_PATTERN_LENGTH];
-  sprintf(buf, INSERT_RANKING_PATTERN, uid, score, enroll_date);
+  sprintf(buf, INSERT_RANKING_PATTERN, uid, score, enroll_date, difficulty);
   MYSQL_RES *res = db_query(buf);
 }
 

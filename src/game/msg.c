@@ -293,6 +293,7 @@ def_msg_encoder(rankings) {
     cJSON_AddStringToObject(json_node(arr_item), "username", row[0]);
     cJSON_AddNumberToObject(json_node(arr_item), "score", atoi(row[1]));
     cJSON_AddNumberToObject(json_node(arr_item), "enroll_date", atoi(row[2]));
+    cJSON_AddNumberToObject(json_node(arr_item), "difficulty", atoi(row[3]));
 
     cJSON_AddItemToArray(json_node(arr), json_node(arr_item));
   }
